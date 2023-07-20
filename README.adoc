@@ -1,0 +1,1 @@
+== Configure Git Global Credentials for CloudBees Automations
