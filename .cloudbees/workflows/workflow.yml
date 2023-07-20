@@ -1,0 +1,19 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: workflow
+
+name: SelfTest
+
+on:
+  push:
+    branches:
+      - "*"
+
+jobs:
+  check:
+    steps:
+      - uses: cloudbees-io/configure-git-global-credentials@v1
+        with:
+          token: ${{ secrets.IO_CONFIG_GIT_GLOBAL_PAT }}
+      - uses: docker://alpine/git:2.40.1
+        run:
+          git clone git@github.com:cloudbees-io/checkout
