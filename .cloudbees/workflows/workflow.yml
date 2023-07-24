@@ -11,7 +11,7 @@ on:
 jobs:
   check:
     steps:
-      - uses: cloudbees-io/configure-git-global-credentials@v1
+      - uses: cloudbees-io/configure-git-global-credentials@v0 # TODO update to v1
         with:
           token: ${{ secrets.IO_CONFIG_GIT_GLOBAL_PAT }}
       - uses: docker://alpine/git:2.40.1
