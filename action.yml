@@ -50,11 +50,11 @@ runs:
   using: composite
   steps:
     - name: Configure
-      uses: docker://registry.saas-dev.beescloud.com/staging/configure-git-credentials:v0.0.1-alpha
+      uses: docker://registry.saas-dev.beescloud.com/staging/configure-git-global-credentials:v0.0.1-alpha
       env:
         CLOUDBEES_EVENT_PATH: /cloudbees/event.json
         INPUT_PROVDER: "${{ inputs.provider }}"
-        INPUT_REPOSITORIES: "${{ inputs.repository }}"
+        INPUT_REPOSITORIES: "${{ inputs.repositories }}"
         INPUT_TOKEN: "${{ inputs.token }}"
         INPUT_SSH_KEY: "${{ inputs.ssh-key }}"
         INPUT_SSH_KNOWN_HOSTS: "${{ inputs.ssh-known-hosts }}"
