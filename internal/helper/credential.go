@@ -42,27 +42,27 @@ type GitCredential struct {
 func (c *GitCredential) WriteTo(w io.Writer) (int64, error) {
 	var n int64
 
-	if strings.Contains(c.Protocol, "\x00") || strings.Contains(c.Protocol, "\n") {
+	if isValidGitCredentialHelperValue(c.Protocol) {
 		return n, fmt.Errorf("protocol cannot contain NUL character or newline")
 	}
 
-	if strings.Contains(c.Host, "\x00") || strings.Contains(c.Host, "\n") {
+	if isValidGitCredentialHelperValue(c.Host) {
 		return n, fmt.Errorf("host cannot contain NUL character or newline")
 	}
 
-	if strings.Contains(c.Path, "\x00") || strings.Contains(c.Path, "\n") {
+	if isValidGitCredentialHelperValue(c.Path) {
 		return n, fmt.Errorf("path cannot contain NUL character or newline")
 	}
 
-	if strings.Contains(c.Username, "\x00") || strings.Contains(c.Username, "\n") {
+	if isValidGitCredentialHelperValue(c.Username) {
 		return n, fmt.Errorf("username cannot contain NUL character or newline")
 	}
 
-	if strings.Contains(c.Password, "\x00") || strings.Contains(c.Password, "\n") {
+	if isValidGitCredentialHelperValue(c.Password) {
 		return n, fmt.Errorf("password cannot contain NUL character or newline")
 	}
 
-	if strings.Contains(c.OAuthRefreshToken, "\x00") || strings.Contains(c.OAuthRefreshToken, "\n") {
+	if isValidGitCredentialHelperValue(c.OAuthRefreshToken) {
 		return n, fmt.Errorf("oauth_refresh_token cannot contain NUL character or newline")
 	}
 
@@ -141,6 +141,12 @@ func (c *GitCredential) WriteTo(w io.Writer) (int64, error) {
 	// wwwauth[] is one-way from git to the helper, so we should never write it out
 
 	return n, nil
+}
+
+// isValidGitCredentialHelperValue verifies that a value meets the constraints of a value that can be exposed
+// via the Git Credential Helper API contract, i.e. cannot contain a null or newline character
+func isValidGitCredentialHelperValue(s string) bool {
+	return strings.Contains(s, "\x00") || strings.Contains(s, "\n")
 }
 
 func ReadCredential(r io.Reader) (*GitCredential, error) {
