@@ -1,0 +1,67 @@
+apiVersion: automation.cloudbees.io/v1alpha1
+kind: action
+name: 'Configure Git Global Credentials'
+description: 'Configures credentials in the Git global configuration'
+inputs:
+  provider:
+    description: 'SCM provider that is hosting the repository. For example github, bitbucket, gitlab or custom'
+    default: "${{ cloudbees.scm.provider }}"
+  repositories:
+    description: 'Whitespace and/or comma separated list of repository names with owner. For example, actions/checkout. Alternatively if provider is custom then this is the clone URL of the repositories'
+  token:
+    description: >
+      Personal access token (PAT) used to fetch the repository. The PAT is configured
+      with the local git config, which enables your scripts to run authenticated git
+      commands. The post-job step removes the PAT.
+
+
+      We recommend using a service account with the least permissions necessary.
+      Also when generating a new PAT, select the least scopes necessary.
+    default: "${{ cloudbees.scm.token }}"
+  ssh-key:
+    description: >
+      SSH key used to fetch the repository. The SSH key is configured with the local
+      git config, which enables your scripts to run authenticated git commands.
+      The post-job step removes the SSH key.
+
+
+      We recommend using a service account with the least permissions necessary.
+  ssh-known-hosts:
+    description: >
+      Known hosts in addition to the user and global host key database. The public
+      SSH keys for a host may be obtained using the utility `ssh-keyscan`. For example,
+      `ssh-keyscan github.com`. The public keys for github.com, bitbucket.org and gitlab.com are always implicitly added.
+  ssh-strict:
+    description: >
+      Whether to perform strict host key checking. When true, adds the options `StrictHostKeyChecking=yes`
+      and `CheckHostIP=no` to the SSH command line. Use the input `ssh-known-hosts` to
+      configure additional hosts.
+    default: "true"
+  github-server-url:
+    description: The base URL for the GitHub instance that you are trying to clone from, will use environment defaults (i.e. the GITHUB_SERVER_URL environment variable) to fetch from the same instance that the workflow is running from unless specified. Example URLs are https://github.com or https://my-ghes-server.example.com
+    required: false
+  bitbucket-server-url:
+    description: The base URL for the Bitbucket instance that you are trying to clone from, will use environment defaults (i.e. the BITBUCKET_SERVER_URL environment variable) to fetch from the same instance that the workflow is running from unless specified. Example URLs are https://bitbucket.org or https://my-bbdc-server.example.com
+    required: false
+  gitlab-server-url:
+    description: The base URL for the GitLab instance that you are trying to clone from, will use environment defaults (i.e. the GITLAB_SERVER_URL environment variable) to fetch from the same instance that the workflow is running from unless specified. Example URLs are https://gitlab.com or https://my-gl-server.example.com
+    required: false
+runs:
+  using: composite
+  steps:
+    - name: Configure
+      uses: docker://registry.saas-dev.beescloud.com/staging/configure-git-global-credentials:v0.0.1-alpha
+      env:
+        CLOUDBEES_EVENT_PATH: /cloudbees/event.json
+        INPUT_PROVDER: "${{ inputs.provider }}"
+        INPUT_REPOSITORIES: "${{ inputs.repositories }}"
+        INPUT_TOKEN: "${{ inputs.token }}"
+        INPUT_SSH_KEY: "${{ inputs.ssh-key }}"
+        INPUT_SSH_KNOWN_HOSTS: "${{ inputs.ssh-known-hosts }}"
+        INPUT_SSH_STRICT: "${{ inputs.ssh-strict }}"
+        INPUT_GITHUB_SERVER_URL: "${{ inputs.github-server-url }}"
+        INPUT_BITBUCKET_SERVER_URL: "${{ inputs.bitbucket-server-url }}"
+        INPUT_GITLAB_SERVER_URL: "${{ inputs.gitlab-server-url }}"
+      with:
+        args: "configure"
+        entrypoint: "configure-git-global-credentials"

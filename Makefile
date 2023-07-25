@@ -23,9 +23,26 @@ MODULE_NAME := $(lastword $(subst /, ,$(shell go list -m)))
 .PHONY: build
 build: ## Build the container image
 	@echo "⚡️ Building container image..."
-	@$(CONTAINERTOOL) build --rm -t $(MODULE_NAME):v$(MAJOR) -f Dockerfile .
+	@$(CONTAINERTOOL) build -t $(MODULE_NAME):v$(MAJOR) -f Dockerfile .
+	@$(CONTAINERTOOL) tag $(MODULE_NAME):v$(MAJOR) $(MODULE_NAME):latest
 	@echo "✅ Container image built"
 
+build-test: ## Build the test container image
+	@echo "⚡️ Building test container image..."
+	@$(CONTAINERTOOL) build --target testing -t $(MODULE_NAME):v$(MAJOR)-testing -f Dockerfile .
+	@$(CONTAINERTOOL) tag $(MODULE_NAME):v$(MAJOR)-testing $(MODULE_NAME):latest-testing
+	@echo "✅ Container test image built and tagged as $(MODULE_NAME):latest-testing"
+
+manual-test: build-test ## Interactively runs the test container to allow manual testing
+	@echo 'ℹ️  To set-up credentials, run something like:'
+	@echo '       configure-git-global-credentials configure \'
+	@echo '            --provider github \'
+	@echo '            --repositories "*/*" \'
+	@echo '            --token ...your.token.here...'
+	@echo 'ℹ️  Critical test cases:'
+	@echo '      1. `git clone ...some.private.repo.url.here...`'
+	@echo '      2. Using `go mod download` from source that has private module dependencies'
+	@$(CONTAINERTOOL) run --rm -ti $(MODULE_NAME):v$(MAJOR)-testing
 
 .PHONY: sync
 sync: VERSION ## Updates action.yml so that the container tag matches the VERSION file
