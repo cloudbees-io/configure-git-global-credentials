@@ -8,8 +8,8 @@ VERSION       := $(shell cat VERSION)
 VERSION_PARTS := $(subst ., ,$(VERSION))
 
 MAJOR := $(word 1,$(VERSION_PARTS))
-MINOR := $(word 2,$(VERSION_PARTS))
-PATCH := $(word 1,$(subst -, ,$(word 3,$(VERSION_PARTS))))
+MINOR := $(or $(word 2,$(VERSION_PARTS)),0)
+PATCH := $(or $(word 1,$(subst -, ,$(word 3,$(VERSION_PARTS)))),0)
 PRE_REL := $(subst $(PATCH),,$(word 3,$(VERSION_PARTS)))
 
 NEXT_MAJOR         := $(shell echo $$(($(MAJOR)+1)))
