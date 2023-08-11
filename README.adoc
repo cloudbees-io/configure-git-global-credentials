@@ -1,4 +1,4 @@
-== Configure Git Global Credentials for CloudBees Automations
+== Configure Git global credentials for CloudBees Automations
 
 Configures the Git global configuration for the current user with authentication, by default scoped to repositories in the same organization as the workflow repository.
 
