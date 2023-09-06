@@ -7,17 +7,29 @@ inputs:
     description: 'SCM provider that is hosting the repository. For example github, bitbucket, gitlab or custom'
     default: "${{ cloudbees.scm.provider }}"
   repositories:
-    description: 'Whitespace and/or comma separated list of repository names with owner. For example, actions/checkout. Alternatively if provider is custom then this is the clone URL of the repositories'
+    description: >
+      Whitespace and/or comma separated list of repository names with owner. For example, `actions/checkout`. 
+      Alternatively if provider is `custom` then this is the clone URL of the repositories
+      
+      If not specified and the `provider` has not been overridden the action will try to infer what the value should be
+      from the triggering event. For example if this action is run in the GitHub repository `example/foo` then the 
+      inferred default repositories value would be `example/*`
+      
+      If a default value cannot be inferred then the action will fail in anticipation that you will explicitly 
+      configure the value for subsequent runs.
+    required: false
+  cloudbees-api-token:
+    description: >
+      The CloudBees API Token to use for fetching SCM tokens unless `token` or `ssh-key` have been configured
+    default: "${{ cloudbees.api.token }}"
+  cloudbees-api-url:
+    description: The CloudBees API root URL to use for fetching SCM tokens
+    default: "${{ cloudbees.api.url }}"
   token:
     description: >
       Personal access token (PAT) used to fetch the repository. The PAT is configured
       with the local git config, which enables your scripts to run authenticated git
-      commands. The post-job step removes the PAT.
-
-
-      We recommend using a service account with the least permissions necessary.
-      Also when generating a new PAT, select the least scopes necessary.
-    default: "${{ cloudbees.scm.token }}"
+      commands.
   ssh-key:
     description: >
       SSH key used to fetch the repository. The SSH key is configured with the local
@@ -50,7 +62,7 @@ runs:
   using: composite
   steps:
     - name: Configure
-      uses: docker://registry.saas-dev.beescloud.com/staging/configure-git-global-credentials:v1.0.2
+      uses: docker://registry.saas-dev.beescloud.com/staging/configure-git-global-credentials:latest
       env:
         CLOUDBEES_EVENT_PATH: /cloudbees/event.json
         INPUT_PROVDER: "${{ inputs.provider }}"
@@ -61,7 +73,8 @@ runs:
         INPUT_SSH_STRICT: "${{ inputs.ssh-strict }}"
         INPUT_GITHUB_SERVER_URL: "${{ inputs.github-server-url }}"
         INPUT_BITBUCKET_SERVER_URL: "${{ inputs.bitbucket-server-url }}"
-        INPUT_GITLAB_SERVER_URL: "${{ inputs.gitlab-server-url }}"
+        INPUT_CLOUDBEES_API_TOKEN: "${{ inputs.cloudbees-api-token }}"
+        INPUT_CLOUDBEES_API_URL: "${{ inputs.cloudbees-api-url }}"
       with:
         args: "configure"
         entrypoint: "configure-git-global-credentials"

@@ -11,9 +11,40 @@ on:
 jobs:
   check:
     steps:
-      - uses: cloudbees-io/configure-git-global-credentials@v1
+      - uses: .
         with:
           token: ${{ secrets.IO_CONFIG_GIT_GLOBAL_PAT }}
       - uses: docker://alpine/git:2.40.1
         run:
-          git clone git@github.com:cloudbees-io/checkout
+          git clone https://github.com/cloudbees-io/checkout.git
+  check-fancy:
+    permissions:
+      scm-token-own: read
+      scm-token-org: read
+    steps:
+      - uses: .
+      - uses: docker://alpine/git:2.40.1
+        run:
+          git clone https://github.com/cloudbees-io/checkout.git
+  check-fancy2:
+    permissions:
+      scm-token-own: read
+      scm-token-org: read
+    steps:
+      - uses: .
+        with:
+          repositories: calculi-corp/*
+      - uses: docker://alpine/git:2.40.1
+        run:
+          git clone https://github.com/calculi-corp/ng-dsl-example.git
+  check-fancy3:
+    permissions:
+      scm-token-own: read
+      scm-token-org: read
+    steps:
+      - uses: .
+        with:
+          repositories: calculi-corp/*
+      - uses: docker://alpine/git:2.40.1
+        run:
+          git clone https://github.com/calculi-corp/scm-service.git

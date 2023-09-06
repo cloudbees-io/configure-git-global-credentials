@@ -25,6 +25,10 @@ type Config struct {
 	Provider string
 	// Repositories whitespace and/or comma separated list of repository names with owner
 	Repositories string
+	// CloudBees API token used to fetch authentication
+	CloudBeesApiToken string `mapstructure:"cloudbees-api-token"`
+	// CloudBees API root URL to fetch authentication from
+	CloudBeesApiURL string `mapstructure:"cloudbees-api-url"`
 	// Personal access token (PAT) used to fetch the repositories
 	Token string
 	// SshKey SSH key used to fetch the repositories
@@ -219,23 +223,14 @@ func (c *Config) Apply(ctx context.Context) error {
 		s = sec.Subsection(strings.TrimPrefix(ep.String(), ep.Protocol+":"))
 
 		if c.Token != "" {
-			switch c.Provider {
-			case "github":
-				// GHA checkout action uses this username
-				s.SetOption("username", "x-access-token")
-			case "gitlab":
-				// https://docs.gitlab.com/ee/user/project/settings/project_access_tokens.html
-				// Any non-blank value as a username
-				s.SetOption("username", "x-access-token")
-			case "bitbucket":
-				// this is what they suggest when you go through https://bitbucket.org/{org}/{repo}/admin/access-tokens
-				s.SetOption("username", "x-token-auth")
-			case "custom":
-				s.SetOption("username", "x-access-token")
-			default:
-				s.SetOption("username", "git")
-			}
+			s.SetOption("username", c.providerUsername())
 			s.SetOption("password", base64.StdEncoding.EncodeToString([]byte(c.Token)))
+		} else if c.SshKey != "" {
+
+		} else if c.CloudBeesApiToken != "" && c.CloudBeesApiURL != "" {
+			s.SetOption("username", c.providerUsername())
+			s.SetOption("cloudBeesApiUrl", c.CloudBeesApiURL)
+			s.SetOption("cloudBeesApiToken", base64.StdEncoding.EncodeToString([]byte(c.CloudBeesApiToken)))
 		}
 	}
 
@@ -261,6 +256,26 @@ func (c *Config) Apply(ctx context.Context) error {
 	fmt.Printf("✅ Git global config at %s updated\n", cfgPath)
 
 	return nil
+}
+
+func (c *Config) providerUsername() string {
+	switch c.Provider {
+	case "github":
+		// GHA checkout action uses this username
+		return "x-access-token"
+	case "gitlab":
+		// https://docs.gitlab.com/ee/user/project/settings/project_access_tokens.html
+		// Any non-blank value as a username
+		return "x-access-token"
+	case "bitbucket":
+		// this is what they suggest when you go through https://bitbucket.org/{org}/{repo}/admin/access-tokens
+		return "x-token-auth"
+	case "custom":
+		return "x-access-token"
+	default:
+		return "git"
+	}
+
 }
 
 func (c *Config) ssh() bool {
