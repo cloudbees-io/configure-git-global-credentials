@@ -1,22 +1,156 @@
 = CloudBees action: Configure Git global credentials
 
-Use this action to set up a Git global configuration for use in CloudBees workflows. 
-This action authenticates the current user, by default scoped to repositories in the same organization as the workflow repository. 
+Use this action to set up a Git global configuration for use in CloudBees workflows.
+This action authenticates the current user, by default scoped to repositories in the same organization as the workflow repository.
 After this step is run, all steps using the Git CLI in the same job authenticate with these credentials.
 
-== Disclaimer
-This repository is provided "as-is", and serves as a reference only. 
-Treat this action as an example only, and test before deploying to production.
-CloudBees does not warrant that any contents of this repository are free from 
-defects or designed to meet any user's business requirements. 
-CloudBees does not make any other warranties, express or implied, statutory or 
-otherwise, including but not limited to implied warranties of merchantability, 
-title, fitness for a particular purpose, or noninfringement. 
+TIP: You can use this action to avoid failures due to lack of pre-authentication of private repositories. For example, if you are building a Go module that depends on other private modules, private repository authentication must be already in place for `go mod download` to run successfully.
+
+[NOTE]
+====
+This action may set up authentication for different types of Git global configurations, including:
+
+* link:https://git-scm.com/docs/gitcredentials#_custom_helpers[Git credentials helpers].
+* link:https://git-scm.com/docs/git-config#Documentation/git-config.txt-urlltbasegtinsteadOf[`+url.<base>.insteadOf+` rules].
+* link:https://git-scm.com/docs/git-config#Documentation/git-config.txt-coresshCommand[`core.sshCommand` rule] to override the default user link:https://man7.org/linux/man-pages/man5/ssh_config.5.html[`+~/.ssh/config+`] configuration file, and specify per-host SSH private keys.
+
+CloudBees recommends that if you are using a Git client other than the official Git CLI, make sure that your Git client supports the authentication configuration applied by this action.
+====
+
+== Usage examples
+
+Use this action to configure a Git token from a secret. This action does not currently work with configuring an SSH private key from a secret, or using CloudBees platform authentication.
+
+=== Configure a token for all repositories in the same organization
+
+Use a token for all repositories in the same organization as the workflow repository.
+For example, the action is run from `+https://github.com/example/myjob+` repository, then the personal access token is configured for all repositories in the `+https://github.com/example+` organization.
+
+In your YAML file, add:
+
+[source,yaml]
+----
+      - name: Git global credentials
+        uses: cloudbees-io/configure-git-global-credentials@v1
+        with:
+          token: ${{ secrets.MY_TOKEN }}
+----
+
+=== Configure a token for specific repositories in the same SCM provider
+
+Use a token for only the named repositories in the same SCM provider as the workflow repository.
+
+In your YAML file, add:
+
+[source,yaml]
+----
+      - name: Git global credentials
+        uses: cloudbees-io/configure-git-global-credentials@v1
+        with:
+          token: ${{ secrets.MY_TOKEN }}
+          repositories: |#<1>
+            example/foo
+            example/bar
+----
+<1> For listing multiple repositories, CloudBees recommends using a line break separator, although the repositories input parameter is a whitespace and/or comma-separated list.
+
+=== Configure a token for all repositories in a different SCM provider
+
+Use a token for all repositories in a named organization in a different SCM provider from that of the workflow repository.
+
+In your YAML file, add:
+
+[source,yaml]
+----
+      - name: Git global credentials
+        uses: cloudbees-io/configure-git-global-credentials@v1
+        with:
+          token: ${{ secrets.MY_GITLAB_TOKEN }}
+          provider: gitlab#<1>
+          repositories: example/*#<2>
+----
+
+<1> You must specify the `repositories` parameter when the `provider` parameter is overridden.
+<2> Wildcard syntax supports only a trailing `/*` on a repository name, or the match-all value (`+*/*+`).
+
+=== Configure a token for a GitHub Enterprise Server
+
+Use a token for a GitHub Enterprise Server.
+
+In your YAML file, add:
+
+[source,yaml]
+----
+      - name: Git global credentials
+        uses: cloudbees-io/configure-git-global-credentials@v1
+        with:
+          token: ${{ secrets.MY_GHE_TOKEN }}
+          provider: github
+          github-server-url: https://my-ghes-server.example.com#<1>
+          repositories: "*/*"#<2>
+----
+
+<1> CloudBees recommends specifying the provider when specifying the `github-server-url` parameter, although it can be technically considered redundant.
+<2> Wildcard syntax supports the match-all value (`+*/*+`), indicating all organizations on the server.
+
+=== Configure a token for GitHub SaaS, Bitbucket, or GitLab SCM provider instances
+
+Use a token for GitHub SaaS, Bitbucket, or GitLab SCM provider instances.
+
+In your YAML file, add:
+
+[source,yaml]
+----
+      - name: Git global credentials
+        uses: cloudbees-io/configure-git-global-credentials@v1
+        with:
+          token: ${{ secrets.MY_SCM_TOKEN }}
+          provider: bitbucket#<1>
+          bitbucket-server-url: https://my-bbdc-server.example.com#<2>
+          repositories: "*/*"#<3>
+----
+
+<1> CloudBees recommends specifying the provider -- `github`, `bitbucket`, or `gitlab` -- as appropriate.
+<2> CloudBees recommends specifying `provider`, in addition to this parameter, although it can, in the case of GitHub, be technically considered redundant.
+* For GitHub, use `+github-server-url:<base URL>+`.
+* For Bitbucket, use `+bitbucket-server-url:<base URL>+`.
+* For GitLab, use `+gitlab-server-url:<base URL>+`.
+<3> Wildcard syntax supports the match-all value (`+*/*+`), indicating all organizations on the server.
+
+=== Configure a token when a step is repeated multiple times in a job
+
+Use a token when a step is repeated multiple times in the same job, resulting in layered authentication. In the case of multiple steps matching the same authentication, the last one takes precedence.
+
+In your YAML file, add:
+
+[source,yaml]
+----
+      - name: Git global credentials for GitHub
+        uses: cloudbees-io/configure-git-global-credentials@v1
+        with:
+          token: ${{ secrets.MY_GITHUB_TOKEN }}
+          repositories: |
+            example/foo
+            example/bar
+      - name: Git global credentials for GHE
+        uses: cloudbees-io/configure-git-global-credentials@v1
+        with:
+          token: ${{ secrets.MY_GHE_TOKEN }}
+          provider: github
+          github-server-url: https://my-ghes-server.example.com
+          repositories: "*/*"
+      - name: Git global credentials for GitLab
+        uses: cloudbees-io/configure-git-global-credentials@v1
+        with:
+          token: ${{ secrets.MY_GITLAB_TOKEN }}
+          provider: gitlab
+          repositories: example/*
+----
 
 == License
 This code is made available under the 
 link:https://opensource.org/license/mit/[MIT license].
 
 == Reference
-For more information on using actions in developing CloudBees workflows, refer
- to the link:https://docs.cloudbees.com/docs/cloudbees-saas-platform/latest/[CloudBees platform documentation].
+* Learn more about link:https://docs.cloudbees.com/docs/cloudbees-saas-platform-actions/latest/[using actions in CloudBees workflows].
+* Learn about link:https://docs.cloudbees.com/docs/cloudbees-saas-platform/latest/[the CloudBees platform].
