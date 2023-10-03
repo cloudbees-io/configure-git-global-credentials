@@ -183,6 +183,27 @@ func (c *Config) Apply(ctx context.Context) error {
 				_ = format.NewDecoder(bytes.NewReader(b)).Decode(helperConfig)
 			}
 		}
+	} else {
+		fmt.Println("🔄 Installing SSH private key ...")
+
+		var sshKeyPath string
+		if sshKeyPath, err = GenerateSSHKey(ctx, actionPath, c.SshKey); err != nil {
+			return err
+		}
+
+		var sshKnownHostsPath string
+		if sshKnownHostsPath, err = GenerateSSHKnownHosts(homePath, actionPath, c.SshKnownHosts); err != nil {
+			return err
+		}
+
+		var sshCommand string
+		if sshCommand, err = GenerateSSHCommand(sshKeyPath, c.SshStrict, sshKnownHostsPath); err != nil {
+			return err
+		}
+
+		cfg.Section("core").SetOption("sshCommand", sshCommand)
+
+		fmt.Println("✅ SSH private key installed")
 	}
 
 	fmt.Printf("🔄 Updating %s ...\n", cfgPath)
@@ -202,6 +223,7 @@ func (c *Config) Apply(ctx context.Context) error {
 
 		for _, n := range v {
 			s.AddOption("insteadOf", n)
+			fmt.Printf("ℹ️️  Configuring Git to clone from %s instead of %s\n", k, n)
 		}
 
 		if helper == "" {
@@ -284,6 +306,9 @@ func (c *Config) ssh() bool {
 
 func (c *Config) repositories() []string {
 	if c.Repositories == "" || strings.TrimSpace(c.Repositories) == "" {
+		if c.SshKey != "" {
+			return []string{"*/*"}
+		}
 		return nil
 	}
 	re := regexp.MustCompile(`[ \t\r\n\f,]+`)

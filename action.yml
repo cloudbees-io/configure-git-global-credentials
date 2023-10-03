@@ -17,6 +17,9 @@ inputs:
       
       If a default value cannot be inferred then the action will fail in anticipation that you will explicitly 
       configure the value for subsequent runs.
+      
+      Configuring this value in conjunction with `ssh-key` is an error as the SSH key has to be installed for all SSH 
+      repositories.
     required: false
   cloudbees-api-token:
     description: >
@@ -32,10 +35,18 @@ inputs:
       commands.
   ssh-key:
     description: >
-      SSH key used to fetch the repository. The SSH key is configured with the local
+      SSH key used to fetch repositories. The SSH key is configured with the global
       git config, which enables your scripts to run authenticated git commands.
-      The post-job step removes the SSH key.
-
+      
+      NOTE: the SSH key will only be used by Git clients that understand how to use
+      the `core.sshCommand` configuration key. If you are using a custom Git client that 
+      cannot process a custom `core.sshCommand` then the SSH key configuration will be
+      ignored by that client. The standard Git CLI will process the `core.sshCommand` 
+      configuration.
+      
+      NOTE: the SSH key will be configured for all SSH remotes. This option is not 
+      compatible with specifying `repositories` as the SSH key has to be installed
+      for all SSH repositories.
 
       We recommend using a service account with the least permissions necessary.
   ssh-known-hosts:
