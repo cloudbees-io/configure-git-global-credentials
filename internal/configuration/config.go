@@ -223,7 +223,7 @@ func (c *Config) Apply(ctx context.Context) error {
 
 		for _, n := range v {
 			s.AddOption("insteadOf", n)
-			fmt.Printf("ℹ️️  Configuring Git to clone from %s instead of %s\n", k, n)
+			fmt.Printf("ℹ️️ Configuring Git to clone from %s instead of %s\n", k, n)
 		}
 
 		if helper == "" {
