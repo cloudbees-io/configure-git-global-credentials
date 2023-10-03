@@ -244,32 +244,32 @@ func getResourceIdFromAutomationToken(token string) (string, error) {
 
 	automationRaw, ok := claims["https://www.cloudbees.com/automation"]
 	if !ok {
-		return "", fmt.Errorf("cloudbees api token is not an automation token")
+		return "", fmt.Errorf("cloudbees api token is not an automation token: missing discriminator claim")
 	}
 
 	automation, ok := automationRaw.(map[string]interface{})
 	if !ok {
-		return "", fmt.Errorf("cloudbees api token is not an automation token")
+		return "", fmt.Errorf("cloudbees api token is not an automation token: discriminator claim is not a map")
 	}
 
 	identityRaw, ok := automation["identity"]
 	if !ok {
-		return "", fmt.Errorf("cloudbees api token is not an automation token")
+		return "", fmt.Errorf("cloudbees api token is not an automation token: missing identity sub-claim")
 	}
 
 	identity, ok := identityRaw.(map[string]interface{})
 	if !ok {
-		return "", fmt.Errorf("cloudbees api token is not an automation token")
+		return "", fmt.Errorf("cloudbees api token is not an automation token: identity sub-claim is not a map")
 	}
 
 	resourceIdRaw, ok := identity["resource_id"]
 	if !ok {
-		return "", fmt.Errorf("cloudbees api token is not an automation token")
+		return "", fmt.Errorf("cloudbees api token is not an automation token: missing resource_id claim")
 	}
 
 	resourceId, ok := resourceIdRaw.(string)
 	if !ok {
-		return "", fmt.Errorf("cloudbees api token is not an automation token")
+		return "", fmt.Errorf("cloudbees api token is not an automation token: resource_id claim is not a string")
 	}
 	return resourceId, nil
 }
