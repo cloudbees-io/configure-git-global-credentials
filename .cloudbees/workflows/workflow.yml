@@ -9,11 +9,65 @@ on:
       - "*"
 
 jobs:
-  check:
+  check-pat:
     steps:
-      - uses: cloudbees-io/configure-git-global-credentials@v1
+      - uses: .
         with:
           token: ${{ secrets.IO_CONFIG_GIT_GLOBAL_PAT }}
       - uses: docker://alpine/git:2.40.1
-        run:
-          git clone git@github.com:cloudbees-io/checkout
+        run: |
+          git clone https://github.com/cloudbees-io/checkout.git
+  check-ssh:
+    steps:
+      - uses: .
+        with:
+          ssh-key: ${{ secrets.IO_CONFIG_CHECKOUT_RO_DEPLOY_KEY }}
+      - uses: docker://alpine/git:2.40.1
+        run: |
+          git clone https://github.com/cloudbees-io/checkout.git
+  check-fancy:
+    permissions:
+      scm-token-own: read
+      scm-token-org: read
+    steps:
+      - uses: cloudbees-io/configure-git-global-credentials@v1
+      - uses: docker://alpine/git:2.40.1
+        run: |
+          git clone https://github.com/cloudbees-io/checkout.git
+  check-fancy2:
+    permissions:
+      scm-token-own: read
+      scm-token-org: read
+    steps:
+      - uses: cloudbees-io/configure-git-global-credentials@v1
+        with:
+          repositories: calculi-corp/*
+      - uses: docker://alpine/git:2.40.1
+        run: |
+          git clone https://github.com/calculi-corp/ng-dsl-example.git
+  check-fancy3:
+    permissions:
+      scm-token-own: read
+      scm-token-org: read
+    steps:
+      - uses: cloudbees-io/configure-git-global-credentials@v1
+        with:
+          repositories: calculi-corp/*
+      - uses: docker://alpine/git:2.40.1
+        run: |
+          git clone https://github.com/calculi-corp/scm-service.git
+  check-fancy4:
+    permissions:
+      scm-token-own: read
+      scm-token-org: read
+    steps:
+      - uses: cloudbees-io/configure-git-global-credentials@v1
+        with:
+          repositories: calculi-corp/*
+      - uses: docker://golang:1.21
+        run: |
+          mkdir test
+          cd test
+          go mod init example.com/test
+          export GOPRIVATE=github.com/calculi-corp
+          go get github.com/calculi-corp/jwt-validator

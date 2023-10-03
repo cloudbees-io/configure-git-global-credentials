@@ -36,6 +36,8 @@ func init() {
 
 	inputString("provider", "", "SCM provider that is hosting the repositories")
 	inputString("repositories", "", "Whitespace and/or comma separated list of repository names with owner")
+	inputString("cloudbees-api-token", "", "CloudBees API token used to fetch authentication")
+	inputString("cloudbees-api-url", "", "CloudBees API root URL to fetch authentication from")
 	inputString("token", "", "Personal access token (PAT) used to fetch the repositories")
 	inputString("ssh-key", "", "SSH key used to fetch the repositories")
 	inputString("ssh-known-hosts", "", "Known hosts in addition to the user and global host key database")

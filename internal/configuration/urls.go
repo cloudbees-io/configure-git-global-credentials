@@ -72,7 +72,7 @@ func (c *Config) allURLs(ssh bool, repository string) ([]string, error) {
 // providerURLPrefixes returns the URLs used to clone any repository on the provider
 func (c *Config) providerURLPrefixes(ssh bool) ([]string, error) {
 	if s, ok := c.lookupURLSource(); ok {
-		return s.providerURLPrefixes(c, false)
+		return s.providerURLPrefixes(c, ssh)
 	}
 	return nil, fmt.Errorf("unknown/unsupported SCM Provider: %s", c.Provider)
 }
@@ -80,7 +80,7 @@ func (c *Config) providerURLPrefixes(ssh bool) ([]string, error) {
 // organizationURLPrefixes returns the URLs used to clone any repository in the organization
 func (c *Config) organizationURLPrefixes(ssh bool, organization string) ([]string, error) {
 	if s, ok := c.lookupURLSource(); ok {
-		return s.organizationURLPrefixes(c, false, organization)
+		return s.organizationURLPrefixes(c, ssh, organization)
 	}
 	return nil, fmt.Errorf("unknown/unsupported SCM Provider: %s", c.Provider)
 }
@@ -88,7 +88,7 @@ func (c *Config) organizationURLPrefixes(ssh bool, organization string) ([]strin
 // repositoryURLs returns the URLs used to clone the repository
 func (c *Config) repositoryURLs(ssh bool, repository string) ([]string, error) {
 	if s, ok := c.lookupURLSource(); ok {
-		return s.repositoryURLs(c, false, repository)
+		return s.repositoryURLs(c, ssh, repository)
 	}
 	return nil, fmt.Errorf("unknown/unsupported SCM Provider: %s", c.Provider)
 }

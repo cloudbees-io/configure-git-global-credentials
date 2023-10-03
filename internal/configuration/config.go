@@ -17,6 +17,7 @@ import (
 	"github.com/go-git/go-git/v5/config"
 	format "github.com/go-git/go-git/v5/plumbing/format/config"
 	"github.com/go-git/go-git/v5/plumbing/transport"
+	"golang.org/x/crypto/ssh"
 )
 
 // Config holds the configuration of the authentication to be applied
@@ -25,6 +26,10 @@ type Config struct {
 	Provider string
 	// Repositories whitespace and/or comma separated list of repository names with owner
 	Repositories string
+	// CloudBees API token used to fetch authentication
+	CloudBeesApiToken string `mapstructure:"cloudbees-api-token"`
+	// CloudBees API root URL to fetch authentication from
+	CloudBeesApiURL string `mapstructure:"cloudbees-api-url"`
 	// Personal access token (PAT) used to fetch the repositories
 	Token string
 	// SshKey SSH key used to fetch the repositories
@@ -179,6 +184,39 @@ func (c *Config) Apply(ctx context.Context) error {
 				_ = format.NewDecoder(bytes.NewReader(b)).Decode(helperConfig)
 			}
 		}
+	} else {
+		// check if the SSH key looks to be a base64 encoded private key that the user forgot to decode
+		if decoded, err := base64.StdEncoding.DecodeString(c.SshKey); err != nil {
+			sshKey := string(decoded)
+			if err == nil && strings.Contains(sshKey, "-----BEGIN") && strings.Contains(sshKey, "PRIVATE KEY-----") {
+				fmt.Println("✅ Base64 decoded SSH key")
+				c.SshKey = sshKey
+			}
+		}
+		if _, err = ssh.ParseRawPrivateKey([]byte(c.SshKey)); err != nil {
+			fmt.Println("❌ Could not parse supplied SSH key")
+			return fmt.Errorf("could not parse supplied SSH key: %w", err)
+		}
+		fmt.Println("🔄 Installing SSH private key ...")
+
+		var sshKeyPath string
+		if sshKeyPath, err = GenerateSSHKey(ctx, actionPath, c.SshKey); err != nil {
+			return err
+		}
+
+		var sshKnownHostsPath string
+		if sshKnownHostsPath, err = GenerateSSHKnownHosts(homePath, actionPath, c.SshKnownHosts); err != nil {
+			return err
+		}
+
+		var sshCommand string
+		if sshCommand, err = GenerateSSHCommand(sshKeyPath, c.SshStrict, sshKnownHostsPath); err != nil {
+			return err
+		}
+
+		cfg.Section("core").SetOption("sshCommand", sshCommand)
+
+		fmt.Println("✅ SSH private key installed")
 	}
 
 	fmt.Printf("🔄 Updating %s ...\n", cfgPath)
@@ -198,6 +236,7 @@ func (c *Config) Apply(ctx context.Context) error {
 
 		for _, n := range v {
 			s.AddOption("insteadOf", n)
+			fmt.Printf("ℹ️️ Configuring Git to clone from %s instead of %s\n", k, n)
 		}
 
 		if helper == "" {
@@ -219,23 +258,14 @@ func (c *Config) Apply(ctx context.Context) error {
 		s = sec.Subsection(strings.TrimPrefix(ep.String(), ep.Protocol+":"))
 
 		if c.Token != "" {
-			switch c.Provider {
-			case "github":
-				// GHA checkout action uses this username
-				s.SetOption("username", "x-access-token")
-			case "gitlab":
-				// https://docs.gitlab.com/ee/user/project/settings/project_access_tokens.html
-				// Any non-blank value as a username
-				s.SetOption("username", "x-access-token")
-			case "bitbucket":
-				// this is what they suggest when you go through https://bitbucket.org/{org}/{repo}/admin/access-tokens
-				s.SetOption("username", "x-token-auth")
-			case "custom":
-				s.SetOption("username", "x-access-token")
-			default:
-				s.SetOption("username", "git")
-			}
+			s.SetOption("username", c.providerUsername())
 			s.SetOption("password", base64.StdEncoding.EncodeToString([]byte(c.Token)))
+		} else if c.SshKey != "" {
+
+		} else if c.CloudBeesApiToken != "" && c.CloudBeesApiURL != "" {
+			s.SetOption("username", c.providerUsername())
+			s.SetOption("cloudBeesApiUrl", c.CloudBeesApiURL)
+			s.SetOption("cloudBeesApiToken", base64.StdEncoding.EncodeToString([]byte(c.CloudBeesApiToken)))
 		}
 	}
 
@@ -263,12 +293,35 @@ func (c *Config) Apply(ctx context.Context) error {
 	return nil
 }
 
+func (c *Config) providerUsername() string {
+	switch c.Provider {
+	case "github":
+		// GHA checkout action uses this username
+		return "x-access-token"
+	case "gitlab":
+		// https://docs.gitlab.com/ee/user/project/settings/project_access_tokens.html
+		// Any non-blank value as a username
+		return "x-access-token"
+	case "bitbucket":
+		// this is what they suggest when you go through https://bitbucket.org/{org}/{repo}/admin/access-tokens
+		return "x-token-auth"
+	case "custom":
+		return "x-access-token"
+	default:
+		return "git"
+	}
+
+}
+
 func (c *Config) ssh() bool {
 	return strings.TrimSpace(c.SshKey) != ""
 }
 
 func (c *Config) repositories() []string {
 	if c.Repositories == "" || strings.TrimSpace(c.Repositories) == "" {
+		if c.SshKey != "" {
+			return []string{"*/*"}
+		}
 		return nil
 	}
 	re := regexp.MustCompile(`[ \t\r\n\f,]+`)

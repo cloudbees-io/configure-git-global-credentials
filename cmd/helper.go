@@ -4,9 +4,18 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
+	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/cloudbees-io/configure-git-global-credentials/internal/helper"
 	format "github.com/go-git/go-git/v5/plumbing/format/config"
@@ -129,7 +138,94 @@ func doGet(command *cobra.Command, args []string) error {
 		}
 	}
 
-	// TODO SDP-6415 handle fetching credentials
+	if closest.HasOption("cloudBeesApiToken") && closest.HasOption("cloudBeesApiUrl") {
+		var token string
+		if b, err := base64.StdEncoding.DecodeString(closest.Option("cloudBeesApiToken")); err == nil {
+			token = string(b)
+		} else {
+			return err
+		}
+
+		baseURL := closest.Option("cloudBeesApiUrl")
+
+		var resourceId string
+		if resourceId, err = getResourceIdFromAutomationToken(token); err != nil {
+			return err
+		}
+
+		if o := os.Getenv("RESOURCE_ID_OVERRIDE"); o != "" {
+			resourceId = o
+		}
+
+		body := map[string]string{
+			"scmRepoUrl": (&transport.Endpoint{
+				Protocol: req.Protocol,
+				Host:     req.Host,
+				Path:     req.Path,
+			}).String(),
+		}
+
+		var bodyBytes []byte
+		if bodyBytes, err = json.Marshal(&body); err != nil {
+			return err
+		}
+
+		var reqURL string
+		if reqURL, err = url.JoinPath(baseURL, "reserved/v1/resources", resourceId, "scm-access-token"); err != nil {
+			return err
+		}
+
+		client := &http.Client{}
+
+		var apiReq *http.Request
+		if apiReq, err = http.NewRequest(
+			"POST",
+			reqURL,
+			bytes.NewReader(bodyBytes),
+		); err != nil {
+			return err
+		}
+
+		apiReq.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+		apiReq.Header.Set("Content-Type", "application/json")
+		apiReq.Header.Set("Accept", "application/json")
+
+		var res *http.Response
+		if res, err = client.Do(apiReq); err != nil {
+			return err
+		}
+
+		defer func() { _ = res.Body.Close() }()
+
+		if bodyBytes, err = io.ReadAll(res.Body); err != nil {
+			return err
+		}
+
+		if res.StatusCode != 200 {
+			return fmt.Errorf("could not fetch SCM token: \nPOST %s\nHTTP/%d %s\n%s", reqURL, res.StatusCode, res.Status, string(bodyBytes))
+		}
+
+		if err = json.Unmarshal(bodyBytes, &body); err != nil {
+			return err
+		}
+
+		rsp.Password = body["accessToken"]
+		if expires, ok := body["expiresAt"]; ok && expires != "" {
+			// we need to parse the time but without pulling in all the swagger deps
+			re := regexp.MustCompile(`(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2}).*`)
+			if matches := re.FindStringSubmatch(expires); matches != nil {
+				// we already confirmed that each submatch is a number so Atoi cannot error out
+				year, _ := strconv.Atoi(matches[1])
+				month, _ := strconv.Atoi(matches[2])
+				day, _ := strconv.Atoi(matches[3])
+				hour, _ := strconv.Atoi(matches[4])
+				minute, _ := strconv.Atoi(matches[5])
+				sec, _ := strconv.Atoi(matches[6])
+				expiresAt := time.Date(year, time.Month(month), day, hour, minute, sec, 0, time.UTC)
+				rsp.PasswordExpiry = &expiresAt
+			}
+		}
+	}
 
 	w := bufio.NewWriter(os.Stdout)
 
@@ -138,4 +234,42 @@ func doGet(command *cobra.Command, args []string) error {
 	}
 
 	return w.Flush()
+}
+
+func getResourceIdFromAutomationToken(token string) (string, error) {
+	claims := jwt.MapClaims{}
+	if _, _, err := jwt.NewParser().ParseUnverified(token, claims); err != nil {
+		return "", err
+	}
+
+	automationRaw, ok := claims["https://www.cloudbees.com/automation"]
+	if !ok {
+		return "", fmt.Errorf("cloudbees api token is not an automation token: missing discriminator claim")
+	}
+
+	automation, ok := automationRaw.(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("cloudbees api token is not an automation token: discriminator claim is not a map")
+	}
+
+	identityRaw, ok := automation["identity"]
+	if !ok {
+		return "", fmt.Errorf("cloudbees api token is not an automation token: missing identity sub-claim")
+	}
+
+	identity, ok := identityRaw.(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("cloudbees api token is not an automation token: identity sub-claim is not a map")
+	}
+
+	resourceIdRaw, ok := identity["resource_id"]
+	if !ok {
+		return "", fmt.Errorf("cloudbees api token is not an automation token: missing resource_id claim")
+	}
+
+	resourceId, ok := resourceIdRaw.(string)
+	if !ok {
+		return "", fmt.Errorf("cloudbees api token is not an automation token: resource_id claim is not a string")
+	}
+	return resourceId, nil
 }
