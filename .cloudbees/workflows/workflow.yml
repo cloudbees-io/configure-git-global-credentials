@@ -19,13 +19,9 @@ jobs:
           git clone https://github.com/cloudbees-io/checkout.git
   check-ssh:
     steps:
-      - id: base64-decoded
-        uses: docker://alpine:3.17
-        run: |
-          echo "${{ secrets.IO_CONFIG_CHECKOUT_RO_DEPLOY_KEY }}" | base64 -d > $CLOUDBEES_OUTPUTS/ssh-key
       - uses: .
         with:
-          ssh-key: ${{ steps.base64-decoded.outputs.ssh-key }}
+          ssh-key: ${{ secrets.IO_CONFIG_CHECKOUT_RO_DEPLOY_KEY }}
       - uses: docker://alpine/git:2.40.1
         run:
           git clone https://github.com/cloudbees-io/checkout.git
@@ -34,7 +30,7 @@ jobs:
       scm-token-own: read
       scm-token-org: read
     steps:
-      - uses: cloudbees-io/configure-git-global-credentials@v1.0.4
+      - uses: cloudbees-io/configure-git-global-credentials@v1.0.5
       - uses: docker://alpine/git:2.40.1
         run:
           git clone https://github.com/cloudbees-io/checkout.git
@@ -43,7 +39,7 @@ jobs:
       scm-token-own: read
       scm-token-org: read
     steps:
-      - uses: cloudbees-io/configure-git-global-credentials@v1.0.4
+      - uses: cloudbees-io/configure-git-global-credentials@v1.0.5
         with:
           repositories: calculi-corp/*
       - uses: docker://alpine/git:2.40.1
@@ -54,7 +50,7 @@ jobs:
       scm-token-own: read
       scm-token-org: read
     steps:
-      - uses: cloudbees-io/configure-git-global-credentials@v1.0.4
+      - uses: cloudbees-io/configure-git-global-credentials@v1.0.5
         with:
           repositories: calculi-corp/*
       - uses: docker://alpine/git:2.40.1

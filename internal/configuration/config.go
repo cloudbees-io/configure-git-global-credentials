@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -184,6 +185,22 @@ func (c *Config) Apply(ctx context.Context) error {
 			}
 		}
 	} else {
+		if len(c.SshKey) < len("-----BEGIN PRIVATE KEY-----\n-----END PRIVATE KEY-----") {
+			fmt.Printf("❌ Supplied SSH Key is too short (%d characters) to be an SSH key\n", len(c.SshKey))
+			return errors.New("supplied SSH key is too short to be a private key")
+		}
+		if !strings.Contains(c.SshKey, "-----BEGIN") && strings.HasPrefix(c.SshKey, "LS0tLS1C") {
+			decoded, err := base64.StdEncoding.DecodeString(c.SshKey)
+			sshKey := string(decoded)
+			if err == nil && strings.Contains(sshKey, "-----BEGIN") && strings.Contains(sshKey, "PRIVATE KEY-----") {
+				fmt.Println("✅ Base64 decoded SSH key")
+				c.SshKey = sshKey
+			}
+		}
+		if !strings.Contains(c.SshKey, "-----BEGIN") || !strings.Contains(c.SshKey, "PRIVATE KEY-----") {
+			fmt.Println("❌ Supplied SSH Key does not contain '-----BEGIN' and 'PRIVATE KEY-----'")
+			return errors.New("supplied SSH key does not contain '-----BEGIN' and 'PRIVATE KEY-----'")
+		}
 		fmt.Println("🔄 Installing SSH private key ...")
 
 		var sshKeyPath string
