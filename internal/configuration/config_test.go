@@ -28,7 +28,7 @@ func TestConfig_insteadOfURLs(t *testing.T) {
 				GitHubServerURL: "https://github.com",
 			},
 			want: map[string][]string{
-				"https://github.com": {
+				"https://github.com/": {
 					"git@github.com:",
 					"ssh://git@github.com/",
 				},
