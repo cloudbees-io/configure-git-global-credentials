@@ -72,7 +72,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Configure
+    - name: Configure Git Global Credentials
       uses: docker://registry.saas-dev.beescloud.com/staging/configure-git-global-credentials:v1.0.5
       env:
         CLOUDBEES_EVENT_PATH: /cloudbees/event.json
