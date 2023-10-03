@@ -30,7 +30,7 @@ jobs:
       scm-token-own: read
       scm-token-org: read
     steps:
-      - uses: cloudbees-io/configure-git-global-credentials@v1.0.3
+      - uses: cloudbees-io/configure-git-global-credentials@v1.0.4
       - uses: docker://alpine/git:2.40.1
         run:
           git clone https://github.com/cloudbees-io/checkout.git
@@ -39,7 +39,7 @@ jobs:
       scm-token-own: read
       scm-token-org: read
     steps:
-      - uses: cloudbees-io/configure-git-global-credentials@v1.0.3
+      - uses: cloudbees-io/configure-git-global-credentials@v1.0.4
         with:
           repositories: calculi-corp/*
       - uses: docker://alpine/git:2.40.1
@@ -50,7 +50,7 @@ jobs:
       scm-token-own: read
       scm-token-org: read
     steps:
-      - uses: cloudbees-io/configure-git-global-credentials@v1.0.3
+      - uses: cloudbees-io/configure-git-global-credentials@v1.0.4
         with:
           repositories: calculi-corp/*
       - uses: docker://alpine/git:2.40.1
