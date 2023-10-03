@@ -18,6 +18,7 @@ import (
 	"github.com/go-git/go-git/v5/config"
 	format "github.com/go-git/go-git/v5/plumbing/format/config"
 	"github.com/go-git/go-git/v5/plumbing/transport"
+	"golang.org/x/crypto/ssh"
 )
 
 // Config holds the configuration of the authentication to be applied
@@ -189,6 +190,7 @@ func (c *Config) Apply(ctx context.Context) error {
 			fmt.Printf("❌ Supplied SSH Key is too short (%d characters) to be an SSH key\n", len(c.SshKey))
 			return errors.New("supplied SSH key is too short to be a private key")
 		}
+		// check if the SSH key looks to be a base64 encoded private key that the user forgot to decode
 		if !strings.Contains(c.SshKey, "-----BEGIN") && strings.HasPrefix(c.SshKey, "LS0tLS1C") {
 			decoded, err := base64.StdEncoding.DecodeString(c.SshKey)
 			sshKey := string(decoded)
@@ -197,9 +199,9 @@ func (c *Config) Apply(ctx context.Context) error {
 				c.SshKey = sshKey
 			}
 		}
-		if !strings.Contains(c.SshKey, "-----BEGIN") || !strings.Contains(c.SshKey, "PRIVATE KEY-----") {
-			fmt.Println("❌ Supplied SSH Key does not contain '-----BEGIN' and 'PRIVATE KEY-----'")
-			return errors.New("supplied SSH key does not contain '-----BEGIN' and 'PRIVATE KEY-----'")
+		if _, err = ssh.ParseRawPrivateKey([]byte(c.SshKey)); err != nil {
+			fmt.Println("❌ Could not parse supplied SSH key")
+			return fmt.Errorf("could not parse supplied SSH key: %w", err)
 		}
 		fmt.Println("🔄 Installing SSH private key ...")
 

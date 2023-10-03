@@ -5,12 +5,13 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
-	"gopkg.in/alessio/shellescape.v1"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"text/template"
+
+	"gopkg.in/alessio/shellescape.v1"
 )
 
 //go:embed ssh_known_hosts.tmpl
