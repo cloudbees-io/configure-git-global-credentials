@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -186,13 +185,8 @@ func (c *Config) Apply(ctx context.Context) error {
 			}
 		}
 	} else {
-		if len(c.SshKey) < len("-----BEGIN PRIVATE KEY-----\n-----END PRIVATE KEY-----") {
-			fmt.Printf("❌ Supplied SSH Key is too short (%d characters) to be an SSH key\n", len(c.SshKey))
-			return errors.New("supplied SSH key is too short to be a private key")
-		}
 		// check if the SSH key looks to be a base64 encoded private key that the user forgot to decode
-		if !strings.Contains(c.SshKey, "-----BEGIN") && strings.HasPrefix(c.SshKey, "LS0tLS1C") {
-			decoded, err := base64.StdEncoding.DecodeString(c.SshKey)
+		if decoded, err := base64.StdEncoding.DecodeString(c.SshKey); err != nil {
 			sshKey := string(decoded)
 			if err == nil && strings.Contains(sshKey, "-----BEGIN") && strings.Contains(sshKey, "PRIVATE KEY-----") {
 				fmt.Println("✅ Base64 decoded SSH key")
