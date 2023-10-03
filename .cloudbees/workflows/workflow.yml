@@ -19,9 +19,13 @@ jobs:
           git clone https://github.com/cloudbees-io/checkout.git
   check-ssh:
     steps:
+      - id: base64-decoded
+        uses: docker://alpine:3.17
+        run: |
+          echo "${{ secrets.IO_CONFIG_CHECKOUT_RO_DEPLOY_KEY }}" | base64 -d > $CLOUDBEES_OUTPUTS/ssh-key
       - uses: .
         with:
-          ssh-key: ${{ secrets.IO_CONFIG_CHECKOUT_RO_DEPLOY_KEY }}
+          ssh-key: ${{ steps.base64-decoded.outputs.ssh-key }}
       - uses: docker://alpine/git:2.40.1
         run:
           git clone https://github.com/cloudbees-io/checkout.git
