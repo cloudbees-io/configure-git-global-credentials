@@ -9,6 +9,32 @@ on:
       - "*"
 
 jobs:
+  build:
+    steps:
+      - name: Get source code
+        uses: cloudbees-io/checkout@v1
+      - name: Setup git credentials
+        uses: cloudbees-io/configure-git-global-credentials@v1
+      - id: build-and-test
+        name: Build and test
+        uses: docker://golang:1.21
+        run: |
+          go test ./...
+      - id: dockerconfig
+        name: Configure container registry credentials
+        uses: cloudbees-io/configure-oci-credentials@v0
+        with:
+          registry: ${{ vars.STAGING_DOCKER_REGISTRY }}
+          username: ${{ secrets.STAGING_DOCKER_USERNAME }}
+          password: ${{ secrets.STAGING_DOCKER_PASSWORD }}
+      - id: build-image
+        name: Build image
+        uses: cloudbees-io/kaniko@v1
+        with:
+          dockerfile: Dockerfile
+          destination: ${{ vars.STAGING_DOCKER_REGISTRY }}/staging/configure-git-global-credentials:${{ cloudbees.version }}
+          context: ${{ cloudbees.workspace }}
+
   check-pat:
     steps:
       - uses: .
