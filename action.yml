@@ -76,7 +76,7 @@ runs:
       uses: docker://public.ecr.aws/l7o7z1g8/actions/configure-git-global-credentials:v1.0.7
       env:
         CLOUDBEES_EVENT_PATH: /cloudbees/event.json
-        INPUT_PROVDER: "${{ inputs.provider }}"
+        INPUT_PROVIDER: "${{ inputs.provider }}"
         INPUT_REPOSITORIES: "${{ inputs.repositories }}"
         INPUT_TOKEN: "${{ inputs.token }}"
         INPUT_SSH_KEY: "${{ inputs.ssh-key }}"
