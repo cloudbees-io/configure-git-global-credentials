@@ -3,7 +3,7 @@ module github.com/cloudbees-io/configure-git-global-credentials
 go 1.21
 
 require (
-	github.com/go-git/go-git/v5 v5.7.0
+	github.com/go-git/go-git/v5 v5.11.0
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.16.0
