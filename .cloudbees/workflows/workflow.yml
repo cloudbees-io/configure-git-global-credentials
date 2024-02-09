@@ -32,7 +32,7 @@ jobs:
         uses: cloudbees-io/kaniko@v1
         with:
           dockerfile: Dockerfile
-          destination: ${{ vars.STAGING_DOCKER_REGISTRY }}/staging/configure-git-global-credentials:${{ cloudbees.scm.sha }}${{ cloudbees.scm.branch == 'main' && format(',{0}/staging/configure-git-global-credentials:1.0.11, {0}/staging/configure-git-global-credentials:latest', vars.STAGING_DOCKER_REGISTRY)  || format(',{0}/staging/configure-git-global-credentials:{1}', vars.STAGING_DOCKER_REGISTRY, cloudbees.version) }}
+          destination: ${{ vars.STAGING_DOCKER_REGISTRY }}/staging/configure-git-global-credentials:${{ cloudbees.scm.sha }}${{ cloudbees.scm.branch == 'main' && format(',{0}/staging/configure-git-global-credentials:1.0.11,{0}/staging/configure-git-global-credentials:latest', vars.STAGING_DOCKER_REGISTRY)  || format(',{0}/staging/configure-git-global-credentials:{1}', vars.STAGING_DOCKER_REGISTRY, cloudbees.version) }}
           context: ${{ cloudbees.workspace }}
 
   check-pat:
