@@ -1,6 +1,5 @@
 apiVersion: automation.cloudbees.io/v1alpha1
 kind: workflow
-
 name: SelfTest
 
 on:
@@ -10,40 +9,59 @@ on:
 
 jobs:
   build:
+    if: cloudbees.api.url == 'https://api.saas-preprod.beescloud.com' || cloudbees.api.url == 'https://api.cloudbees.io'
+    permissions:
+      scm-token-own: read
+      id-token: write
     steps:
-      - name: Get source code
-        uses: cloudbees-io/checkout@v1
-      - name: Setup git credentials
-        uses: cloudbees-io/configure-git-global-credentials@v1
-      - id: build-and-test
-        name: Build and test
-        uses: docker://golang:1.21
-        run: |
-          go test ./...
-      - id: dockerconfig
-        name: Configure container registry credentials
-        uses: cloudbees-io/configure-oci-credentials@v0
-        with:
-          registry: ${{ vars.STAGING_DOCKER_REGISTRY }}
-          username: ${{ secrets.STAGING_DOCKER_USERNAME }}
-          password: ${{ secrets.STAGING_DOCKER_PASSWORD }}
-      - id: build-image
-        name: Build image
-        uses: cloudbees-io/kaniko@v1
-        with:
-          dockerfile: Dockerfile
-          destination: ${{ vars.STAGING_DOCKER_REGISTRY }}/staging/configure-git-global-credentials:${{ cloudbees.scm.sha }}${{ cloudbees.scm.branch == 'main' && format(',{0}/staging/configure-git-global-credentials:1.0.11,{0}/staging/configure-git-global-credentials:latest', vars.STAGING_DOCKER_REGISTRY)  || format(',{0}/staging/configure-git-global-credentials:{1}', vars.STAGING_DOCKER_REGISTRY, cloudbees.version) }}
-          context: ${{ cloudbees.workspace }}
+      - name: Checkout
+        uses: https://github.com/cloudbees-io/checkout@v1
 
-  check-pat:
+      - name: Self Test
+        uses: docker://golang:1.21.7
+        run: |
+          make verify
+
+      - name: Login to AWS
+        uses: https://github.com/cloudbees-io/configure-aws-credentials@v1
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ vars.oidc_staging_iam_role }}
+          role-duration-seconds: "3600"
+
+      - name: Configure container registry for Staging ECR
+        uses: https://github.com/cloudbees-io/configure-ecr-credentials@v1
+
+      - name: Login to Dockerhub using Cloudbees service account
+        uses: https://github.com/cloudbees-io/configure-oci-credentials@v1
+        with:
+          registry: docker.io
+          username: ${{ secrets.e5bbc3_dockerhub_user }}
+          password: ${{ secrets.e5bbc3_dockerhub_password }}
+
+      - name: Build image
+        uses: https://github.com/cloudbees-io/kaniko@v1
+        with:
+          destination: 020229604682.dkr.ecr.us-east-1.amazonaws.com/actions/configure-git-global-credentials:${{ cloudbees.scm.sha }}
+          labels: maintainer=sdp-pod-3,email=engineering@cloudbees.io
+
+  test-pat:
+    if: cloudbees.api.url == 'https://api.saas-preprod.beescloud.com'
+    needs:
+      - build
     steps:
-      - uses: .
+      - uses: ./.cloudbees/testing
         with:
           token: ${{ secrets.IO_CONFIG_GIT_GLOBAL_PAT }}
+
       - uses: docker://alpine/git:2.40.1
         run: |
           git clone https://github.com/cloudbees-io/checkout.git
-  check-ssh:
+
+  test-ssh-key:
+    if: cloudbees.api.url == 'https://api.saas-preprod.beescloud.com'
+    needs:
+      - build
     steps:
       - id: decode-sshkey
         uses: docker://alpine:3.18
@@ -51,49 +69,55 @@ jobs:
           echo "$SSHKEY" | base64 -d | printf %s > $CLOUDBEES_OUTPUTS/sshkey
         env:
           SSHKEY: ${{ secrets.IO_CONFIG_CHECKOUT_RO_DEPLOY_KEY }}
-      - uses: .
+
+      - uses: ./.cloudbees/testing
         with:
           ssh-key: ${{ steps.decode-sshkey.outputs.sshkey }}
+
       - uses: docker://alpine/git:2.40.1
         run: |
           git clone https://github.com/cloudbees-io/checkout.git
-  check-fancy:
+
+  test-job-token-own-gh-org:
+    if: cloudbees.api.url == 'https://api.saas-preprod.beescloud.com'
+    needs:
+      - build
     permissions:
       scm-token-own: read
       scm-token-org: read
     steps:
-      - uses: cloudbees-io/configure-git-global-credentials@v1
+      - uses: ./.cloudbees/testing
+
       - uses: docker://alpine/git:2.40.1
         run: |
           git clone https://github.com/cloudbees-io/checkout.git
-  check-fancy2:
+
+  test-job-token-own-cb-org:
+    if: cloudbees.api.url == 'https://api.saas-preprod.beescloud.com'
+    needs:
+      - build
     permissions:
       scm-token-own: read
       scm-token-org: read
     steps:
-      - uses: cloudbees-io/configure-git-global-credentials@v1
+      - uses: ./.cloudbees/testing
         with:
+          # a repository in the same CloudBees org as this repo even if differing GitHub org
           repositories: calculi-corp/*
-      - uses: docker://alpine/git:2.40.1
-        run: |
-          git clone https://github.com/calculi-corp/ng-dsl-example.git
-  check-fancy3:
-    permissions:
-      scm-token-own: read
-      scm-token-org: read
-    steps:
-      - uses: cloudbees-io/configure-git-global-credentials@v1
-        with:
-          repositories: calculi-corp/*
+
       - uses: docker://alpine/git:2.40.1
         run: |
           git clone https://github.com/calculi-corp/scm-service.git
-  check-fancy4:
+
+  test-job-token-go-get:
+    if: cloudbees.api.url == 'https://api.saas-preprod.beescloud.com'
+    needs:
+      - build
     permissions:
       scm-token-own: read
       scm-token-org: read
     steps:
-      - uses: cloudbees-io/configure-git-global-credentials@v1
+      - uses: ./.cloudbees/testing
         with:
           repositories: calculi-corp/*
       - uses: docker://golang:1.21
