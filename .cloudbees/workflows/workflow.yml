@@ -16,6 +16,9 @@ jobs:
     steps:
       - name: Checkout
         uses: https://github.com/cloudbees-io/checkout@v1
+      
+      - name: Git creds
+        uses: https://github.com/cloudbees-io/configure-git-global-credentials@main
 
       - name: Self Test
         uses: docker://golang:1.21.7
