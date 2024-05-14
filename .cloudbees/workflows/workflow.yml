@@ -18,7 +18,7 @@ jobs:
         uses: https://github.com/cloudbees-io/checkout@v1
 
       - name: Self Test
-        uses: docker://golang:1.21.7
+        uses: docker://golang:1.22.0
         run: |
           make verify
 
@@ -42,7 +42,7 @@ jobs:
       - name: Build image
         uses: https://github.com/cloudbees-io/kaniko@v1
         with:
-          destination: 020229604682.dkr.ecr.us-east-1.amazonaws.com/actions/configure-git-global-credentials:${{ cloudbees.scm.sha }}
+          destination: 020229604682.dkr.ecr.us-east-1.amazonaws.com/actions/configure-git-global-credentials:${{ cloudbees.scm.sha }},020229604682.dkr.ecr.us-east-1.amazonaws.com/actions/configure-git-global-credentials:latest
           labels: maintainer=sdp-pod-3,email=engineering@cloudbees.io
 
   test-pat:
@@ -120,7 +120,7 @@ jobs:
       - uses: ./.cloudbees/testing
         with:
           repositories: calculi-corp/*
-      - uses: docker://golang:1.21
+      - uses: docker://golang:1.22.0
         run: |
           mkdir test
           cd test
