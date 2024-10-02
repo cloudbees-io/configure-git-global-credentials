@@ -18,7 +18,7 @@ jobs:
         uses: https://github.com/cloudbees-io/checkout@v1
 
       - name: Self Test
-        uses: docker://golang:1.22.0
+        uses: docker://golang:1.23.1
         run: |
           make verify
 
@@ -47,7 +47,7 @@ jobs:
         with:
           token: ${{ secrets.IO_CONFIG_GIT_GLOBAL_PAT }}
 
-      - uses: docker://alpine/git:2.40.1
+      - uses: docker://alpine/git:2.45.2
         run: |
           git clone https://github.com/cloudbees-io/checkout.git
 
@@ -57,7 +57,7 @@ jobs:
       - build
     steps:
       - id: decode-sshkey
-        uses: docker://alpine:3.18
+        uses: docker://alpine:3.20
         run: |
           echo "$SSHKEY" | base64 -d | printf %s > $CLOUDBEES_OUTPUTS/sshkey
         env:
@@ -67,7 +67,7 @@ jobs:
         with:
           ssh-key: ${{ steps.decode-sshkey.outputs.sshkey }}
 
-      - uses: docker://alpine/git:2.40.1
+      - uses: docker://alpine/git:2.45.2
         run: |
           git clone https://github.com/cloudbees-io/checkout.git
 
@@ -81,7 +81,7 @@ jobs:
     steps:
       - uses: ./.cloudbees/testing
 
-      - uses: docker://alpine/git:2.40.1
+      - uses: docker://alpine/git:2.45.2
         run: |
           git clone https://github.com/cloudbees-io/checkout.git
 
@@ -98,7 +98,7 @@ jobs:
           # a repository in the same CloudBees org as this repo even if differing GitHub org
           repositories: calculi-corp/*
 
-      - uses: docker://alpine/git:2.40.1
+      - uses: docker://alpine/git:2.45.2
         run: |
           git clone https://github.com/calculi-corp/scm-service.git
 
@@ -113,7 +113,7 @@ jobs:
       - uses: ./.cloudbees/testing
         with:
           repositories: calculi-corp/*
-      - uses: docker://golang:1.22.0
+      - uses: docker://golang:1.23.1
         run: |
           mkdir test
           cd test
