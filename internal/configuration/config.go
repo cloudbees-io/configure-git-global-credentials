@@ -91,7 +91,7 @@ func (c *Config) populateDefaults(ctx context.Context) error {
 		c.GitLabServerURL = "https://gitlab.com"
 	}
 
-	if c.BitbucketServerURL == "" {
+	if c.Provider == BitbucketProvider && c.BitbucketServerURL == "" {
 		c.BitbucketServerURL = "https://bitbucket.org"
 	}
 
@@ -102,6 +102,16 @@ func (c *Config) populateDefaults(ctx context.Context) error {
 			c.Provider = strings.ToLower(ctxProvider)
 		} else {
 			return fmt.Errorf("required input 'provider' not specified and could not be inferred from event")
+		}
+	}
+
+	if c.Provider == BitbucketDatacenterProvider {
+		if c.BitbucketServerURL == "" {
+			if providerURL, ok := getStringFromMap(evt, "providerURL"); ok {
+				c.BitbucketServerURL = providerURL
+			} else {
+				return fmt.Errorf("missing Bitbucket Server URL")
+			}
 		}
 	}
 
@@ -244,7 +254,12 @@ func (c *Config) Apply(ctx context.Context) error {
 			continue
 		}
 
-		s = credentialSection.Subsection(k)
+		if c.Provider == BitbucketDatacenterProvider {
+			s = credentialSection.Subsection(c.BitbucketServerURL)
+		} else {
+			s = credentialSection.Subsection(k)
+		}
+
 		s.SetOption("helper", helper)
 		s.SetOption("useHttpPath", "true")
 

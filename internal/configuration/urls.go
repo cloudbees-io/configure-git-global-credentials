@@ -18,13 +18,15 @@ var urlSources = []urlSource{
 	&gitlabURLSource{},
 	&bitbucketURLSource{},
 	&customURLSource{},
+	&bitbucketDatacenterURLSource{},
 }
 
 const (
-	GitHubProvider    = "github"
-	GitLabProvider    = "gitlab"
-	BitbucketProvider = "bitbucket"
-	CustomProvider    = "custom"
+	GitHubProvider              = "github"
+	GitLabProvider              = "gitlab"
+	BitbucketProvider           = "bitbucket"
+	CustomProvider              = "custom"
+	BitbucketDatacenterProvider = "bitbucket_datacenter"
 )
 
 func (c *Config) lookupURLSource() (urlSource, bool) {
