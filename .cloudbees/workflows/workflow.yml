@@ -18,7 +18,7 @@ jobs:
         uses: https://github.com/cloudbees-io/checkout@v1
 
       - name: Self Test
-        uses: docker://golang:1.23.1
+        uses: docker://golang:1.23.4
         run: |
           make verify
 
@@ -113,7 +113,7 @@ jobs:
       - uses: ./.cloudbees/testing
         with:
           repositories: calculi-corp/*
-      - uses: docker://golang:1.23.1
+      - uses: docker://golang:1.23.4
         run: |
           mkdir test
           cd test
