@@ -344,7 +344,7 @@ func (c *Config) invokeGitCredentialsHelper(path, gitConfigPath string, filterGi
 
 	filterUrlArgs := []string{}
 
-	filterUrlArgs = append(filterUrlArgs, "--init")
+	filterUrlArgs = append(filterUrlArgs, "init")
 	filterUrlArgs = append(filterUrlArgs, "--config", helperConfig)
 	filterUrlArgs = append(filterUrlArgs, "--cloudbees-api-token-env-var", tokenEnv)
 	filterUrlArgs = append(filterUrlArgs, "--cloudbees-api-url", c.CloudBeesApiURL)
