@@ -142,6 +142,7 @@ func (c *Config) Apply(ctx context.Context) error {
 	if err := c.populateDefaults(ctx); err != nil {
 		return err
 	}
+	fmt.Printf("config %+v\n", c)
 
 	fmt.Println("🔄 Parsing existing Git global config ...")
 
@@ -323,6 +324,7 @@ func (c *Config) Apply(ctx context.Context) error {
 
 		fmt.Printf("✅ Git global config at %s updated\n", cfgPath)
 	} else {
+		fmt.Printf("aliases %+v\n", aliases)
 
 		filterUrl := make([]string, 0, len(aliases))
 		for url := range aliases {
