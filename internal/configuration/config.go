@@ -244,8 +244,8 @@ func (c *Config) Apply(ctx context.Context) error {
 
 		fmt.Println("✅ SSH private key installed")
 	}
-	if !gitCredCloudbeesExists {
-
+	if c.ssh() || !gitCredCloudbeesExists {
+		// for ssh or if  cloudbees-git-cred-helper does not Exists  use old approach
 		fmt.Printf("🔄 Updating %s ...\n", cfgPath)
 
 		urlSection := cfg.Section("url")
