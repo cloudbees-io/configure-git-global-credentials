@@ -244,7 +244,7 @@ func (c *Config) Apply(ctx context.Context) error {
 		fmt.Println("✅ SSH private key installed")
 	}
 	if c.ssh() || !gitCredCloudbeesExists {
-		// for ssh or if  cloudbees-git-cred-helper does not Exists  use old approach
+		// For SSH, or if cloudbees-git-cred-helper does not exist, use the old approach
 		fmt.Printf("🔄 Updating %s ...\n", cfgPath)
 
 		urlSection := cfg.Section("url")
@@ -276,7 +276,6 @@ func (c *Config) Apply(ctx context.Context) error {
 				s = credentialSection.Subsection(k)
 			}
 
-			// this is done using new helper
 			s.SetOption("helper", helper)
 			s.SetOption("useHttpPath", "true")
 
@@ -306,7 +305,6 @@ func (c *Config) Apply(ctx context.Context) error {
 			if err := format.NewEncoder(&b).Encode(helperConfig); err != nil {
 				return err
 			}
-			// this is done using new helper
 			if err := os.WriteFile(helperConfigFile, b.Bytes(), 0666); err != nil {
 				return err
 			}
@@ -357,7 +355,7 @@ func (c *Config) invokeGitCredentialsHelper(path, gitConfigPath string, filterGi
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	fmt.Println(cmd.String())
+	internal.Debug("%s", cmd.String())
 
 	cmd.Env = append(os.Environ(), fmt.Sprintf("%s=%s", tokenEnv, c.CloudBeesApiToken))
 
