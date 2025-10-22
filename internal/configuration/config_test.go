@@ -1,11 +1,14 @@
 package configuration
 
 import (
+	"bytes"
 	"context"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/go-git/go-git/v5/config"
+	format "github.com/go-git/go-git/v5/plumbing/format/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -608,6 +611,8 @@ func TestConfig_insteadOfURLs(t *testing.T) {
 	}
 }
 func TestConfig_Apply_Scenarios(t *testing.T) {
+	originalCfg, cfgPath, err := loadConfig(config.GlobalScope)
+	require.NoError(t, err)
 	tests := []struct {
 		name                   string
 		config                 Config
@@ -674,6 +679,14 @@ AAAEApe1n3xwD4plUvs5E82QSBggtUz1M6HiiaVEYWp7ybpnm16ynTrfckn5DaF+lReWPC
 
 		})
 	}
+
+	// Restore original config
+	var b bytes.Buffer
+	err = format.NewEncoder(&b).Encode(originalCfg)
+	require.NoError(t, err)
+
+	err = os.WriteFile(cfgPath, b.Bytes(), 0666)
+	require.NoError(t, err)
 }
 
 func helperBinary(t *testing.T) {
