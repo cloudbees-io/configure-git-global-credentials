@@ -214,7 +214,7 @@ func (c *Config) Apply(ctx context.Context) error {
 				filterUrl = append(filterUrl, url)
 			}
 
-			return c.invokeGitCredentialsHelper(cbGitCredentialsHelperPath, cfgPath, filterUrl)
+			return c.invokeGitCredentialsHelper(ctx, cbGitCredentialsHelperPath, cfgPath, filterUrl)
 		}
 	} else {
 		// check if the SSH key looks to be a base64 encoded private key that the user forgot to decode
@@ -330,7 +330,7 @@ func (c *Config) Apply(ctx context.Context) error {
 	return nil
 }
 
-func (c *Config) invokeGitCredentialsHelper(path, gitConfigPath string, filterGitUrls []string) error {
+func (c *Config) invokeGitCredentialsHelper(ctx context.Context, path, gitConfigPath string, filterGitUrls []string) error {
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -348,7 +348,7 @@ func (c *Config) invokeGitCredentialsHelper(path, gitConfigPath string, filterGi
 	for _, filterGitUrl := range filterGitUrls {
 		filterUrlArgs = append(filterUrlArgs, "--filter-git-urls", filterGitUrl)
 	}
-	cmd := exec.Command(path, filterUrlArgs...)
+	cmd := exec.CommandContext(ctx, path, filterGitUrls...)
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
