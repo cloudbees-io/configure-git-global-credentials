@@ -208,6 +208,13 @@ func (c *Config) Apply(ctx context.Context) error {
 					_ = format.NewDecoder(bytes.NewReader(b)).Decode(helperConfig)
 				}
 			}
+		} else {
+			filterUrl := make([]string, 0, len(aliases))
+			for url := range aliases {
+				filterUrl = append(filterUrl, url)
+			}
+
+			return c.invokeGitCredentialsHelper(cbGitCredentialsHelperPath, cfgPath, filterUrl)
 		}
 	} else {
 		// check if the SSH key looks to be a base64 encoded private key that the user forgot to decode
@@ -243,92 +250,83 @@ func (c *Config) Apply(ctx context.Context) error {
 
 		fmt.Println("✅ SSH private key installed")
 	}
-	if c.ssh() || !gitCredCloudbeesExists {
-		// For SSH, or if cloudbees-git-cred-helper does not exist, use the old approach
-		fmt.Printf("🔄 Updating %s ...\n", cfgPath)
 
-		urlSection := cfg.Section("url")
-		credentialSection := cfg.Section("credential")
+	fmt.Printf("🔄 Updating %s ...\n", cfgPath)
 
-		for k, v := range aliases {
-			for _, n := range v {
-				urlSection.RemoveSubsection(n)
-				credentialSection.RemoveSubsection(n)
-			}
+	urlSection := cfg.Section("url")
+	credentialSection := cfg.Section("credential")
 
-			s := urlSection.Subsection(k)
-
-			s.RemoveOption("insteadOf")
-
-			for _, n := range v {
-				s.AddOption("insteadOf", n)
-				fmt.Printf("ℹ️️ Configuring Git to clone from %s instead of %s\n", k, n)
-			}
-
-			if helper == "" {
-				credentialSection.RemoveSubsection(k)
-				continue
-			}
-
-			if c.Provider == BitbucketDatacenterProvider {
-				s = credentialSection.Subsection(c.BitbucketServerURL)
-			} else {
-				s = credentialSection.Subsection(k)
-			}
-
-			s.SetOption("helper", helper)
-			s.SetOption("useHttpPath", "true")
-
-			ep, err := transport.NewEndpoint(k)
-			if err != nil {
-				return err
-			}
-
-			sec := helperConfig.Section(ep.Protocol)
-
-			s = sec.Subsection(strings.TrimPrefix(ep.String(), ep.Protocol+":"))
-
-			if c.Token != "" {
-				s.SetOption("username", c.providerUsername())
-				s.SetOption("password", base64.StdEncoding.EncodeToString([]byte(c.Token)))
-			} else if c.SshKey != "" {
-
-			} else if c.CloudBeesApiToken != "" && c.CloudBeesApiURL != "" {
-				s.SetOption("username", c.providerUsername())
-				s.SetOption("cloudBeesApiUrl", c.CloudBeesApiURL)
-				s.SetOption("cloudBeesApiToken", base64.StdEncoding.EncodeToString([]byte(c.CloudBeesApiToken)))
-			}
+	for k, v := range aliases {
+		for _, n := range v {
+			urlSection.RemoveSubsection(n)
+			credentialSection.RemoveSubsection(n)
 		}
 
-		if helperConfigFile != "" && helperConfig != nil {
-			var b bytes.Buffer
-			if err := format.NewEncoder(&b).Encode(helperConfig); err != nil {
-				return err
-			}
-			if err := os.WriteFile(helperConfigFile, b.Bytes(), 0666); err != nil {
-				return err
-			}
+		s := urlSection.Subsection(k)
+
+		s.RemoveOption("insteadOf")
+
+		for _, n := range v {
+			s.AddOption("insteadOf", n)
+			fmt.Printf("ℹ️️ Configuring Git to clone from %s instead of %s\n", k, n)
 		}
 
-		var b bytes.Buffer
-		if err := format.NewEncoder(&b).Encode(cfg); err != nil {
+		if helper == "" {
+			credentialSection.RemoveSubsection(k)
+			continue
+		}
+
+		if c.Provider == BitbucketDatacenterProvider {
+			s = credentialSection.Subsection(c.BitbucketServerURL)
+		} else {
+			s = credentialSection.Subsection(k)
+		}
+
+		s.SetOption("helper", helper)
+		s.SetOption("useHttpPath", "true")
+
+		ep, err := transport.NewEndpoint(k)
+		if err != nil {
 			return err
 		}
 
-		if err := os.WriteFile(cfgPath, b.Bytes(), 0666); err != nil {
-			return err
+		sec := helperConfig.Section(ep.Protocol)
+
+		s = sec.Subsection(strings.TrimPrefix(ep.String(), ep.Protocol+":"))
+
+		if c.Token != "" {
+			s.SetOption("username", c.providerUsername())
+			s.SetOption("password", base64.StdEncoding.EncodeToString([]byte(c.Token)))
+		} else if c.SshKey != "" {
+
+		} else if c.CloudBeesApiToken != "" && c.CloudBeesApiURL != "" {
+			s.SetOption("username", c.providerUsername())
+			s.SetOption("cloudBeesApiUrl", c.CloudBeesApiURL)
+			s.SetOption("cloudBeesApiToken", base64.StdEncoding.EncodeToString([]byte(c.CloudBeesApiToken)))
 		}
-
-		fmt.Printf("✅ Git global config at %s updated\n", cfgPath)
-	} else {
-
-		filterUrl := make([]string, 0, len(aliases))
-		for url := range aliases {
-			filterUrl = append(filterUrl, url)
-		}
-
-		return c.invokeGitCredentialsHelper(cbGitCredentialsHelperPath, cfgPath, filterUrl)
 	}
+
+	if helperConfigFile != "" && helperConfig != nil {
+		var b bytes.Buffer
+		if err := format.NewEncoder(&b).Encode(helperConfig); err != nil {
+			return err
+		}
+		if err := os.WriteFile(helperConfigFile, b.Bytes(), 0666); err != nil {
+			return err
+		}
+	}
+
+	var b bytes.Buffer
+	if err := format.NewEncoder(&b).Encode(cfg); err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(cfgPath, b.Bytes(), 0666); err != nil {
+		return err
+	}
+
+	fmt.Printf("✅ Git global config at %s updated\n", cfgPath)
+
 	return nil
 }
 
