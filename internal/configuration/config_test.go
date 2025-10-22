@@ -1,8 +1,12 @@
 package configuration
 
 import (
+	"context"
+	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -602,4 +606,82 @@ func TestConfig_insteadOfURLs(t *testing.T) {
 			require.Equal(t, tt.want, got)
 		})
 	}
+}
+func TestConfig_Apply_Scenarios(t *testing.T) {
+	tests := []struct {
+		name                   string
+		config                 Config
+		setupCredentialsHelper bool
+	}{
+		{
+			name: "with credentials helper",
+			config: Config{
+				Repositories: "user/repo",
+				Provider:     "github",
+			},
+			setupCredentialsHelper: true,
+		},
+		{
+			name: "without credentials helper",
+			config: Config{
+				Repositories: "user/repo",
+				Provider:     "github",
+			},
+			setupCredentialsHelper: false,
+		},
+		{
+			name: "with credentials helper and ssh",
+			config: Config{
+				Repositories: "user/repo",
+				Provider:     "github",
+				SshKey: `-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+QyNTUxOQAAACB5tesp0633JJ+Q2hfpUXljwtBX263Tq9ENr76NdZ9e3wAAAKAFw5AuBcOQ
+LgAAAAtzc2gtZWQyNTUxOQAAACB5tesp0633JJ+Q2hfpUXljwtBX263Tq9ENr76NdZ9e3w
+AAAEApe1n3xwD4plUvs5E82QSBggtUz1M6HiiaVEYWp7ybpnm16ynTrfckn5DaF+lReWPC
+0FfbrdOr0Q2vvo11n17fAAAAFnlvdXJfZW1haWxAZXhhbXBsZS5jb20BAgMEBQYH
+-----END OPENSSH PRIVATE KEY-----
+`,
+			},
+			setupCredentialsHelper: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Reset the credentials helper invocation flag
+			gitCredentialsHelperInvoked := false
+
+			// mock credentials helper function
+			invokeGitCredentialsHelper = func(ctx context.Context, path, gitConfigPath, cloudbeesApiURL, cloudbeesApiToken string, filterGitUrls []string) error {
+				gitCredentialsHelperInvoked = true
+				return nil
+			}
+
+			if tt.setupCredentialsHelper {
+				helperBinary(t)
+			}
+
+			// Execute the Apply method
+			err := tt.config.Apply(context.Background())
+			assert.NoError(t, err)
+
+			if tt.config.ssh() {
+				assert.Equal(t, false, gitCredentialsHelperInvoked)
+			} else {
+				assert.Equal(t, tt.setupCredentialsHelper, gitCredentialsHelperInvoked)
+			}
+
+		})
+	}
+}
+
+func helperBinary(t *testing.T) {
+	binPath := filepath.Join(t.TempDir(), cbGitCredentialsHelperPath)
+	err := os.WriteFile(binPath, []byte("dummy git credential helper"), 0500)
+	require.NoError(t, err)
+
+	err = os.Setenv("PATH", filepath.Dir(binPath)+string(os.PathListSeparator)+os.Getenv("PATH"))
+	require.NoError(t, err)
+
 }

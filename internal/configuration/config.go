@@ -48,7 +48,10 @@ type Config struct {
 	GitLabServerURL string `mapstructure:"gitlab-server-url"`
 }
 
-const tokenEnv = "CLOUDBEES_API_TOKEN"
+const (
+	tokenEnv                   = "CLOUDBEES_API_TOKEN"
+	cbGitCredentialsHelperPath = "git-credential-cloudbees"
+)
 
 func loadConfig(scope config.Scope) (_ *format.Config, _ string, retErr error) {
 	paths, err := config.Paths(scope)
@@ -158,7 +161,7 @@ func (c *Config) Apply(ctx context.Context) error {
 	}
 
 	gitCredCloudbeesExists := true
-	cbGitCredentialsHelperPath, err := exec.LookPath("git-credential-cloudbees")
+	cbGitCredentialsHelperPath, err := exec.LookPath(cbGitCredentialsHelperPath)
 	if err != nil {
 		internal.Debug("Could not find git-credential-cloudbees on the path, falling back to old-style helper")
 		gitCredCloudbeesExists = false
@@ -214,7 +217,7 @@ func (c *Config) Apply(ctx context.Context) error {
 				filterUrl = append(filterUrl, url)
 			}
 
-			return c.invokeGitCredentialsHelper(ctx, cbGitCredentialsHelperPath, cfgPath, filterUrl)
+			return invokeGitCredentialsHelper(ctx, cbGitCredentialsHelperPath, cfgPath, c.CloudBeesApiURL, c.CloudBeesApiToken, filterUrl)
 		}
 	} else {
 		// check if the SSH key looks to be a base64 encoded private key that the user forgot to decode
@@ -330,7 +333,7 @@ func (c *Config) Apply(ctx context.Context) error {
 	return nil
 }
 
-func (c *Config) invokeGitCredentialsHelper(ctx context.Context, path, gitConfigPath string, filterGitUrls []string) error {
+var invokeGitCredentialsHelper = func(ctx context.Context, path, gitConfigPath, cloudbeesApiURL, cloudbeesApiToken string, filterGitUrls []string) error {
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -343,7 +346,7 @@ func (c *Config) invokeGitCredentialsHelper(ctx context.Context, path, gitConfig
 	filterUrlArgs = append(filterUrlArgs, "init")
 	filterUrlArgs = append(filterUrlArgs, "--config", helperConfig)
 	filterUrlArgs = append(filterUrlArgs, "--cloudbees-api-token-env-var", tokenEnv)
-	filterUrlArgs = append(filterUrlArgs, "--cloudbees-api-url", c.CloudBeesApiURL)
+	filterUrlArgs = append(filterUrlArgs, "--cloudbees-api-url", cloudbeesApiURL)
 	filterUrlArgs = append(filterUrlArgs, "--git-config-file-path", gitConfigPath)
 	for _, filterGitUrl := range filterGitUrls {
 		filterUrlArgs = append(filterUrlArgs, "--filter-git-urls", filterGitUrl)
@@ -355,7 +358,7 @@ func (c *Config) invokeGitCredentialsHelper(ctx context.Context, path, gitConfig
 
 	internal.Debug("%s", cmd.String())
 
-	cmd.Env = append(os.Environ(), fmt.Sprintf("%s=%s", tokenEnv, c.CloudBeesApiToken))
+	cmd.Env = append(os.Environ(), fmt.Sprintf("%s=%s", tokenEnv, cloudbeesApiToken))
 
 	return cmd.Run()
 }
