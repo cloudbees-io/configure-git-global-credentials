@@ -53,7 +53,7 @@ const (
 	cbGitCredentialsHelperPath = "git-credential-cloudbees"
 )
 
-func loadConfig(scope config.Scope) (_ *format.Config, _ string, retErr error) {
+var loadConfig = func(scope config.Scope) (_ *format.Config, _ string, retErr error) {
 	paths, err := config.Paths(scope)
 	if err != nil {
 		return nil, "", err

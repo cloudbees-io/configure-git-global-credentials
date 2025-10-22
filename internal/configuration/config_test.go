@@ -611,7 +611,7 @@ func TestConfig_insteadOfURLs(t *testing.T) {
 	}
 }
 func TestConfig_Apply_Scenarios(t *testing.T) {
-	originalCfg, cfgPath, err := loadConfig(config.GlobalScope)
+	originalCfg, _, err := loadConfig(config.GlobalScope)
 	require.NoError(t, err)
 	tests := []struct {
 		name                   string
@@ -663,6 +663,21 @@ AAAEApe1n3xwD4plUvs5E82QSBggtUz1M6HiiaVEYWp7ybpnm16ynTrfckn5DaF+lReWPC
 				return nil
 			}
 
+			// mock loadConfig helper function
+			loadConfig = func(scope config.Scope) (_ *format.Config, _ string, retErr error) {
+
+				tempGitConfig := filepath.Join(t.TempDir(), ".gitconfig")
+
+				var b bytes.Buffer
+				err = format.NewEncoder(&b).Encode(originalCfg)
+				require.NoError(t, err)
+
+				err = os.WriteFile(tempGitConfig, b.Bytes(), 0666)
+				require.NoError(t, err)
+
+				return nil, tempGitConfig, nil
+			}
+
 			if tt.setupCredentialsHelper {
 				helperBinary(t)
 			}
@@ -679,14 +694,6 @@ AAAEApe1n3xwD4plUvs5E82QSBggtUz1M6HiiaVEYWp7ybpnm16ynTrfckn5DaF+lReWPC
 
 		})
 	}
-
-	// Restore original config
-	var b bytes.Buffer
-	err = format.NewEncoder(&b).Encode(originalCfg)
-	require.NoError(t, err)
-
-	err = os.WriteFile(cfgPath, b.Bytes(), 0666)
-	require.NoError(t, err)
 }
 
 func helperBinary(t *testing.T) {
