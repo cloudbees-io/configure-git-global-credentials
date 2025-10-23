@@ -9,11 +9,13 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
 
+	"github.com/cloudbees-io/configure-git-global-credentials/internal"
 	"github.com/go-git/go-git/v5/config"
 	format "github.com/go-git/go-git/v5/plumbing/format/config"
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -46,7 +48,12 @@ type Config struct {
 	GitLabServerURL string `mapstructure:"gitlab-server-url"`
 }
 
-func loadConfig(scope config.Scope) (_ *format.Config, _ string, retErr error) {
+const (
+	tokenEnv                   = "CLOUDBEES_API_TOKEN"
+	cbGitCredentialsHelperPath = "git-credential-cloudbees"
+)
+
+var loadConfig = func(scope config.Scope) (_ *format.Config, _ string, retErr error) {
 	paths, err := config.Paths(scope)
 	if err != nil {
 		return nil, "", err
@@ -153,6 +160,15 @@ func (c *Config) Apply(ctx context.Context) error {
 		return err
 	}
 
+	gitCredCloudbeesExists := true
+	cbGitCredentialsHelperPath, err := exec.LookPath(cbGitCredentialsHelperPath)
+	if err != nil {
+		internal.Debug("Could not find git-credential-cloudbees on the path, falling back to old-style helper")
+		gitCredCloudbeesExists = false
+	} else {
+		internal.Debug("Found git-credential-cloudbees on the path at %s", cbGitCredentialsHelperPath)
+	}
+
 	homePath := os.Getenv("HOME")
 	actionPath := filepath.Join(homePath, ".cloudbees-configure-git-global-credentials", c.uniqueId())
 	if err := os.MkdirAll(actionPath, os.ModePerm); err != nil {
@@ -164,35 +180,44 @@ func (c *Config) Apply(ctx context.Context) error {
 	var helperConfigFile string
 
 	if !c.ssh() {
-		fmt.Println("🔄 Installing credentials helper ...")
+		if !gitCredCloudbeesExists {
+			fmt.Println("🔄 Installing credentials helper ...")
 
-		self, err := os.Executable()
-		if err != nil {
-			return err
-		}
-
-		helperExecutable := filepath.Join(actionPath, "git-credential-helper")
-		if a, err := filepath.Abs(helperExecutable); err != nil {
-			helperExecutable = a
-		}
-
-		err = copyFileHelper(helperExecutable, self)
-		if err != nil {
-			return err
-		}
-
-		fmt.Println("✅ Credentials helper installed")
-
-		helperConfig = &format.Config{}
-		helperConfigFile = helperExecutable + ".cfg"
-		helper = fmt.Sprintf("%s credential-helper --config-file %s", helperExecutable, helperConfigFile)
-
-		if _, err := os.Stat(helperConfigFile); err != nil {
-			b, err := os.ReadFile(helperConfigFile)
-			if err == nil {
-				// make best effort to merge existing, if it fails we will overwrite the whole
-				_ = format.NewDecoder(bytes.NewReader(b)).Decode(helperConfig)
+			self, err := os.Executable()
+			if err != nil {
+				return err
 			}
+
+			helperExecutable := filepath.Join(actionPath, "git-credential-helper")
+			if a, err := filepath.Abs(helperExecutable); err != nil {
+				helperExecutable = a
+			}
+
+			err = copyFileHelper(helperExecutable, self)
+			if err != nil {
+				return err
+			}
+
+			fmt.Println("✅ Credentials helper installed")
+
+			helperConfig = &format.Config{}
+			helperConfigFile = helperExecutable + ".cfg"
+			helper = fmt.Sprintf("%s credential-helper --config-file %s", helperExecutable, helperConfigFile)
+
+			if _, err := os.Stat(helperConfigFile); err != nil {
+				b, err := os.ReadFile(helperConfigFile)
+				if err == nil {
+					// make best effort to merge existing, if it fails we will overwrite the whole
+					_ = format.NewDecoder(bytes.NewReader(b)).Decode(helperConfig)
+				}
+			}
+		} else {
+			filterUrl := make([]string, 0, len(aliases))
+			for url := range aliases {
+				filterUrl = append(filterUrl, url)
+			}
+
+			return invokeGitCredentialsHelper(ctx, cbGitCredentialsHelperPath, cfgPath, c.CloudBeesApiURL, c.CloudBeesApiToken, filterUrl)
 		}
 	} else {
 		// check if the SSH key looks to be a base64 encoded private key that the user forgot to decode
@@ -306,6 +331,36 @@ func (c *Config) Apply(ctx context.Context) error {
 	fmt.Printf("✅ Git global config at %s updated\n", cfgPath)
 
 	return nil
+}
+
+var invokeGitCredentialsHelper = func(ctx context.Context, path, gitConfigPath, cloudbeesApiURL, cloudbeesApiToken string, filterGitUrls []string) error {
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	helperConfig := filepath.Join(homeDir, ".git-credential-cloudbees-config")
+
+	filterUrlArgs := []string{}
+
+	filterUrlArgs = append(filterUrlArgs, "init")
+	filterUrlArgs = append(filterUrlArgs, "--config", helperConfig)
+	filterUrlArgs = append(filterUrlArgs, "--cloudbees-api-token-env-var", tokenEnv)
+	filterUrlArgs = append(filterUrlArgs, "--cloudbees-api-url", cloudbeesApiURL)
+	filterUrlArgs = append(filterUrlArgs, "--git-config-file-path", gitConfigPath)
+	for _, filterGitUrl := range filterGitUrls {
+		filterUrlArgs = append(filterUrlArgs, "--filter-git-urls", filterGitUrl)
+	}
+	cmd := exec.CommandContext(ctx, path, filterUrlArgs...)
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	internal.Debug("%s", cmd.String())
+
+	cmd.Env = append(os.Environ(), fmt.Sprintf("%s=%s", tokenEnv, cloudbeesApiToken))
+
+	return cmd.Run()
 }
 
 func (c *Config) providerUsername() string {
