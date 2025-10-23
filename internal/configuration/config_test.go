@@ -675,7 +675,7 @@ AAAEApe1n3xwD4plUvs5E82QSBggtUz1M6HiiaVEYWp7ybpnm16ynTrfckn5DaF+lReWPC
 				err = os.WriteFile(tempGitConfig, b.Bytes(), 0666)
 				require.NoError(t, err)
 
-				return nil, tempGitConfig, nil
+				return originalCfg, tempGitConfig, nil
 			}
 
 			if tt.setupCredentialsHelper {
