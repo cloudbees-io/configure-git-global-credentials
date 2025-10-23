@@ -139,17 +139,6 @@ func (c *Config) populateDefaults(ctx context.Context) error {
 	return nil
 }
 
-func printEnv() {
-	envs := os.Environ()
-	sort.Strings(envs) // optional: for nice sorted output
-
-	fmt.Println("----printEnv----")
-	for _, e := range envs {
-		fmt.Println(e)
-	}
-	fmt.Println("----printEnv----")
-}
-
 // Apply applies the configuration to the Git Global config
 func (c *Config) Apply(ctx context.Context) error {
 
@@ -175,13 +164,10 @@ func (c *Config) Apply(ctx context.Context) error {
 	cbGitCredentialsHelperPath, err := exec.LookPath(cbGitCredentialsHelperPath)
 	if err != nil {
 		internal.Debug("Could not find git-credential-cloudbees on the path, falling back to old-style helper")
-		fmt.Println("Could not find git-credential-cloudbees on the path, falling back to old-style helper")
 		gitCredCloudbeesExists = false
 	} else {
 		internal.Debug("Found git-credential-cloudbees on the path at %s", cbGitCredentialsHelperPath)
-		fmt.Printf("Found git-credential-cloudbees on the path at %s\n", cbGitCredentialsHelperPath)
 	}
-	printEnv()
 
 	homePath := os.Getenv("HOME")
 	actionPath := filepath.Join(homePath, ".cloudbees-configure-git-global-credentials", c.uniqueId())
@@ -369,8 +355,6 @@ var invokeGitCredentialsHelper = func(ctx context.Context, path, gitConfigPath, 
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-
-	fmt.Printf("command %s\n filterUrlArgs %v", cmd.String(), filterUrlArgs)
 
 	internal.Debug("%s", cmd.String())
 
