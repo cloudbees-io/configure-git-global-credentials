@@ -614,7 +614,8 @@ func TestConfig_insteadOfURLs(t *testing.T) {
 func TestConfig_Apply_Scenarios(t *testing.T) {
 	originalCfg, path, err := loadConfig(config.GlobalScope)
 	require.NoError(t, err)
-	fmt.Printf("git config path %s", path)
+	fmt.Printf("git config path %s \n", path)
+	printConfig(t, originalCfg)
 	tests := []struct {
 		name                   string
 		config                 Config
@@ -656,11 +657,13 @@ AAAEApe1n3xwD4plUvs5E82QSBggtUz1M6HiiaVEYWp7ybpnm16ynTrfckn5DaF+lReWPC
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			fmt.Printf("------------%s-------------------------\n", tt.name)
 			// Reset the credentials helper invocation flag
 			gitCredentialsHelperInvoked := false
 
 			// mock credentials helper function
 			invokeGitCredentialsHelper = func(ctx context.Context, path, gitConfigPath, cloudbeesApiURL, cloudbeesApiToken string, filterGitUrls []string) error {
+				fmt.Printf("invokeGitCredentialsHelper invoked \n")
 				gitCredentialsHelperInvoked = true
 				return nil
 			}
@@ -676,6 +679,7 @@ AAAEApe1n3xwD4plUvs5E82QSBggtUz1M6HiiaVEYWp7ybpnm16ynTrfckn5DaF+lReWPC
 
 				err = os.WriteFile(tempGitConfig, b.Bytes(), 0666)
 				require.NoError(t, err)
+				fmt.Printf("git tempGitConfig path %s\n %+v\n", tempGitConfig, originalCfg)
 
 				return originalCfg, tempGitConfig, nil
 			}
@@ -694,11 +698,25 @@ AAAEApe1n3xwD4plUvs5E82QSBggtUz1M6HiiaVEYWp7ybpnm16ynTrfckn5DaF+lReWPC
 				assert.Equal(t, tt.setupCredentialsHelper, gitCredentialsHelperInvoked)
 			}
 
-			fmt.Println("-------------------------------------")
+			printConfig(t, originalCfg)
+			fmt.Printf("------------%s-------------------------\n", tt.name)
 		})
 	}
 }
 
+func printConfig(t *testing.T, originalCfg *format.Config) {
+
+	var b bytes.Buffer
+	err := format.NewEncoder(&b).Encode(originalCfg)
+	require.NoError(t, err)
+
+	fmt.Println("------gitconfig-------- ")
+	fmt.Printf("%s\n", b.String())
+	fmt.Println("------gitconfig-------- ")
+
+	require.NoError(t, err)
+
+}
 func helperBinary(t *testing.T) {
 	binPath := filepath.Join(t.TempDir(), cbGitCredentialsHelperPath)
 	err := os.WriteFile(binPath, []byte("dummy git credential helper"), 0500)
