@@ -3,6 +3,7 @@ package configuration
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -611,8 +612,9 @@ func TestConfig_insteadOfURLs(t *testing.T) {
 	}
 }
 func TestConfig_Apply_Scenarios(t *testing.T) {
-	originalCfg, _, err := loadConfig(config.GlobalScope)
+	originalCfg, path, err := loadConfig(config.GlobalScope)
 	require.NoError(t, err)
+	fmt.Printf("git config path %s", path)
 	tests := []struct {
 		name                   string
 		config                 Config
@@ -692,6 +694,7 @@ AAAEApe1n3xwD4plUvs5E82QSBggtUz1M6HiiaVEYWp7ybpnm16ynTrfckn5DaF+lReWPC
 				assert.Equal(t, tt.setupCredentialsHelper, gitCredentialsHelperInvoked)
 			}
 
+			fmt.Println("-------------------------------------")
 		})
 	}
 }
