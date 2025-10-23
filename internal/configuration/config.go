@@ -370,6 +370,8 @@ var invokeGitCredentialsHelper = func(ctx context.Context, path, gitConfigPath, 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
+	fmt.Printf("command %s\n", cmd.String())
+
 	internal.Debug("%s", cmd.String())
 
 	cmd.Env = append(os.Environ(), fmt.Sprintf("%s=%s", tokenEnv, cloudbeesApiToken))
