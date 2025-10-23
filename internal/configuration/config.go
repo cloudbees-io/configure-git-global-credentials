@@ -365,12 +365,12 @@ var invokeGitCredentialsHelper = func(ctx context.Context, path, gitConfigPath, 
 	for _, filterGitUrl := range filterGitUrls {
 		filterUrlArgs = append(filterUrlArgs, "--filter-git-urls", filterGitUrl)
 	}
-	cmd := exec.CommandContext(ctx, path, filterGitUrls...)
+	cmd := exec.CommandContext(ctx, path, filterUrlArgs...)
 
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	fmt.Printf("command %s\n", cmd.String())
+	fmt.Printf("command %s\n filterUrlArgs %v", cmd.String(), filterUrlArgs)
 
 	internal.Debug("%s", cmd.String())
 
