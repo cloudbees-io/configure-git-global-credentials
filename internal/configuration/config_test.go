@@ -722,7 +722,7 @@ func helperBinary(t *testing.T) {
 	err := os.WriteFile(binPath, []byte("dummy git credential helper"), 0500)
 	require.NoError(t, err)
 
-	err = os.Setenv("PATH", filepath.Dir(binPath)+string(os.PathListSeparator)+os.Getenv("PATH"))
+	err = os.Setenv("PATH", filepath.Dir(binPath))
 	require.NoError(t, err)
 
 }
