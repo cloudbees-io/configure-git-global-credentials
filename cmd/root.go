@@ -46,7 +46,7 @@ func init() {
 	inputString("bitbucket-server-url", "", "The base URL for the Bitbucket instance that you are trying to clone from")
 	inputString("gitlab-server-url", "", "The base URL for the GitLab instance that you are trying to clone from")
 
-	rootCmd.AddCommand(helperCmd, configureCmd)
+	rootCmd.AddCommand(configureCmd)
 }
 
 func inputString(name string, value string, usage string) {

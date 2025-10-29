@@ -160,15 +160,6 @@ func (c *Config) Apply(ctx context.Context) error {
 		return err
 	}
 
-	gitCredCloudbeesExists := true
-	cbGitCredentialsHelperPath, err := exec.LookPath(cbGitCredentialsHelperPath)
-	if err != nil {
-		internal.Debug("Could not find git-credential-cloudbees on the path, falling back to old-style helper")
-		gitCredCloudbeesExists = false
-	} else {
-		internal.Debug("Found git-credential-cloudbees on the path at %s", cbGitCredentialsHelperPath)
-	}
-
 	homePath := os.Getenv("HOME")
 	actionPath := filepath.Join(homePath, ".cloudbees-configure-git-global-credentials", c.uniqueId())
 	if err := os.MkdirAll(actionPath, os.ModePerm); err != nil {
@@ -180,45 +171,11 @@ func (c *Config) Apply(ctx context.Context) error {
 	var helperConfigFile string
 
 	if !c.ssh() {
-		if !gitCredCloudbeesExists {
-			fmt.Println("🔄 Installing credentials helper ...")
-
-			self, err := os.Executable()
-			if err != nil {
-				return err
-			}
-
-			helperExecutable := filepath.Join(actionPath, "git-credential-helper")
-			if a, err := filepath.Abs(helperExecutable); err != nil {
-				helperExecutable = a
-			}
-
-			err = copyFileHelper(helperExecutable, self)
-			if err != nil {
-				return err
-			}
-
-			fmt.Println("✅ Credentials helper installed")
-
-			helperConfig = &format.Config{}
-			helperConfigFile = helperExecutable + ".cfg"
-			helper = fmt.Sprintf("%s credential-helper --config-file %s", helperExecutable, helperConfigFile)
-
-			if _, err := os.Stat(helperConfigFile); err != nil {
-				b, err := os.ReadFile(helperConfigFile)
-				if err == nil {
-					// make best effort to merge existing, if it fails we will overwrite the whole
-					_ = format.NewDecoder(bytes.NewReader(b)).Decode(helperConfig)
-				}
-			}
-		} else {
-			filterUrl := make([]string, 0, len(aliases))
-			for url := range aliases {
-				filterUrl = append(filterUrl, url)
-			}
-
-			return invokeGitCredentialsHelper(ctx, cbGitCredentialsHelperPath, cfgPath, c.CloudBeesApiURL, c.CloudBeesApiToken, filterUrl)
+		filterUrl := make([]string, 0, len(aliases))
+		for url := range aliases {
+			filterUrl = append(filterUrl, url)
 		}
+		return invokeGitCredentialsHelper(ctx, cbGitCredentialsHelperPath, cfgPath, c.CloudBeesApiURL, c.CloudBeesApiToken, filterUrl)
 	} else {
 		// check if the SSH key looks to be a base64 encoded private key that the user forgot to decode
 		if decoded, err := base64.StdEncoding.DecodeString(c.SshKey); err == nil {
