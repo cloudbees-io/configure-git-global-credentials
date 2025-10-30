@@ -114,6 +114,7 @@ func (c *Config) Apply(ctx context.Context) error {
 
 	if !c.ssh() {
 		repoUrlArr := c.repositories()
+		fmt.Printf("repoUrlArr %v\n", repoUrlArr)
 		filterUrl := make([]string, 0, len(repoUrlArr))
 		filterUrl = append(filterUrl, repoUrlArr...)
 		return invokeGitCredentialsHelper(ctx, cbGitCredentialsHelperPath, cfgPath, c.CloudBeesApiURL, c.CloudBeesApiToken, filterUrl)
