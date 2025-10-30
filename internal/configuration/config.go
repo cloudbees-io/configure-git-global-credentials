@@ -180,7 +180,7 @@ func (c *Config) Apply(ctx context.Context) error {
 	var helperConfigFile string
 
 	if !c.ssh() {
-		if !gitCredCloudbeesExists {
+		if !gitCredCloudbeesExists || len(c.Token) > 0 {
 			fmt.Println("🔄 Installing credentials helper ...")
 
 			self, err := os.Executable()
