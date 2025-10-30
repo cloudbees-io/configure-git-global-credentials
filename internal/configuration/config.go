@@ -18,14 +18,11 @@ import (
 	"github.com/cloudbees-io/configure-git-global-credentials/internal"
 	"github.com/go-git/go-git/v5/config"
 	format "github.com/go-git/go-git/v5/plumbing/format/config"
-	"github.com/go-git/go-git/v5/plumbing/transport"
 	"golang.org/x/crypto/ssh"
 )
 
 // Config holds the configuration of the authentication to be applied
 type Config struct {
-	// Provider SCM provider that is hosting the repositories
-	Provider string
 	// Repositories whitespace and/or comma separated list of repository names with owner
 	Repositories string
 	// CloudBees API token used to fetch authentication
@@ -45,7 +42,7 @@ type Config struct {
 	// BitbucketServerURL the base URL for the Bitbucket instance that you are trying to clone from
 	BitbucketServerURL string `mapstructure:"bitbucket-server-url"`
 	// GitLabServerURL the base URL for the GitLab instance that you are trying to clone from
-	GitLabServerURL string `mapstructure:"gitlab-server-url"`
+	// GitLabServerURL string `mapstructure:"gitlab-server-url"`
 }
 
 const (
@@ -90,52 +87,6 @@ func (c *Config) populateDefaults(ctx context.Context) error {
 		return fmt.Errorf("input parameters 'token' and 'ssh-key' are mutually exclusive")
 	}
 
-	if c.GitHubServerURL == "" {
-		c.GitHubServerURL = "https://github.com"
-	}
-
-	if c.GitLabServerURL == "" {
-		c.GitLabServerURL = "https://gitlab.com"
-	}
-
-	if c.Provider == BitbucketProvider && c.BitbucketServerURL == "" {
-		c.BitbucketServerURL = "https://bitbucket.org"
-	}
-
-	evt := findEventContext()
-
-	if strings.TrimSpace(c.Provider) == "" {
-		if ctxProvider, haveP := getStringFromMap(evt, "provider"); haveP {
-			c.Provider = strings.ToLower(ctxProvider)
-		} else {
-			return fmt.Errorf("required input 'provider' not specified and could not be inferred from event")
-		}
-	}
-
-	if c.Provider == BitbucketDatacenterProvider {
-		if c.BitbucketServerURL == "" {
-			if providerURL, ok := getStringFromMap(evt, "providerURL"); ok {
-				c.BitbucketServerURL = providerURL
-			} else {
-				return fmt.Errorf("missing Bitbucket Server URL")
-			}
-		}
-	}
-
-	if strings.TrimSpace(c.Repositories) == "" {
-		ctxProvider, haveP := getStringFromMap(evt, "provider")
-		ctxProvider = strings.ToLower(ctxProvider)
-
-		if ctxRepository, haveR := getStringFromMap(evt, "repository"); haveR && haveP && c.Provider == ctxProvider {
-			i := strings.LastIndex(ctxRepository, "/")
-			if i > 0 {
-				c.Repositories = ctxRepository[:i] + "/*"
-			} else {
-				return fmt.Errorf("required input 'repositories' not specified and could not be inferred from event")
-			}
-		}
-	}
-
 	return nil
 }
 
@@ -155,26 +106,16 @@ func (c *Config) Apply(ctx context.Context) error {
 
 	fmt.Printf("✅ Git global config at %s parsed\n", cfgPath)
 
-	aliases, err := c.insteadOfURLs()
-	if err != nil {
-		return err
-	}
-
 	homePath := os.Getenv("HOME")
 	actionPath := filepath.Join(homePath, ".cloudbees-configure-git-global-credentials", c.uniqueId())
 	if err := os.MkdirAll(actionPath, os.ModePerm); err != nil {
 		return err
 	}
 
-	var helper string
-	var helperConfig *format.Config
-	var helperConfigFile string
-
 	if !c.ssh() {
-		filterUrl := make([]string, 0, len(aliases))
-		for url := range aliases {
-			filterUrl = append(filterUrl, url)
-		}
+		repoUrlArr := c.repositories()
+		filterUrl := make([]string, 0, len(repoUrlArr))
+		filterUrl = append(filterUrl, repoUrlArr...)
 		return invokeGitCredentialsHelper(ctx, cbGitCredentialsHelperPath, cfgPath, c.CloudBeesApiURL, c.CloudBeesApiToken, filterUrl)
 	} else {
 		// check if the SSH key looks to be a base64 encoded private key that the user forgot to decode
@@ -212,69 +153,6 @@ func (c *Config) Apply(ctx context.Context) error {
 	}
 
 	fmt.Printf("🔄 Updating %s ...\n", cfgPath)
-
-	urlSection := cfg.Section("url")
-	credentialSection := cfg.Section("credential")
-
-	for k, v := range aliases {
-		for _, n := range v {
-			urlSection.RemoveSubsection(n)
-			credentialSection.RemoveSubsection(n)
-		}
-
-		s := urlSection.Subsection(k)
-
-		s.RemoveOption("insteadOf")
-
-		for _, n := range v {
-			s.AddOption("insteadOf", n)
-			fmt.Printf("ℹ️️ Configuring Git to clone from %s instead of %s\n", k, n)
-		}
-
-		if helper == "" {
-			credentialSection.RemoveSubsection(k)
-			continue
-		}
-
-		if c.Provider == BitbucketDatacenterProvider {
-			s = credentialSection.Subsection(c.BitbucketServerURL)
-		} else {
-			s = credentialSection.Subsection(k)
-		}
-
-		s.SetOption("helper", helper)
-		s.SetOption("useHttpPath", "true")
-
-		ep, err := transport.NewEndpoint(k)
-		if err != nil {
-			return err
-		}
-
-		sec := helperConfig.Section(ep.Protocol)
-
-		s = sec.Subsection(strings.TrimPrefix(ep.String(), ep.Protocol+":"))
-
-		if c.Token != "" {
-			s.SetOption("username", c.providerUsername())
-			s.SetOption("password", base64.StdEncoding.EncodeToString([]byte(c.Token)))
-		} else if c.SshKey != "" {
-
-		} else if c.CloudBeesApiToken != "" && c.CloudBeesApiURL != "" {
-			s.SetOption("username", c.providerUsername())
-			s.SetOption("cloudBeesApiUrl", c.CloudBeesApiURL)
-			s.SetOption("cloudBeesApiToken", base64.StdEncoding.EncodeToString([]byte(c.CloudBeesApiToken)))
-		}
-	}
-
-	if helperConfigFile != "" && helperConfig != nil {
-		var b bytes.Buffer
-		if err := format.NewEncoder(&b).Encode(helperConfig); err != nil {
-			return err
-		}
-		if err := os.WriteFile(helperConfigFile, b.Bytes(), 0666); err != nil {
-			return err
-		}
-	}
 
 	var b bytes.Buffer
 	if err := format.NewEncoder(&b).Encode(cfg); err != nil {
@@ -320,26 +198,6 @@ var invokeGitCredentialsHelper = func(ctx context.Context, path, gitConfigPath, 
 	return cmd.Run()
 }
 
-func (c *Config) providerUsername() string {
-	switch c.Provider {
-	case "github":
-		// GHA checkout action uses this username
-		return "x-access-token"
-	case "gitlab":
-		// https://docs.gitlab.com/ee/user/project/settings/project_access_tokens.html
-		// Any non-blank value as a username
-		return "x-access-token"
-	case "bitbucket":
-		// this is what they suggest when you go through https://bitbucket.org/{org}/{repo}/admin/access-tokens
-		return "x-token-auth"
-	case "custom":
-		return "x-access-token"
-	default:
-		return "git"
-	}
-
-}
-
 func (c *Config) ssh() bool {
 	return strings.TrimSpace(c.SshKey) != ""
 }
@@ -367,27 +225,27 @@ func (c *Config) uniqueId() string {
 	return fmt.Sprintf("%x", bs)[0:16]
 }
 
-func (c *Config) insteadOfURLs() (map[string][]string, error) {
-	ssh := c.ssh()
-	repos := c.repositories()
-	result := make(map[string][]string, len(repos))
-	for _, r := range repos {
-		preferred, err := c.allURLs(ssh, r)
-		if err != nil {
-			return nil, err
-		}
-		alternate, err := c.allURLs(!ssh, r)
-		if err != nil {
-			return nil, err
-		}
-		if len(preferred) > 1 {
-			result[preferred[0]] = append(preferred[1:], alternate...)
-		} else if len(preferred) == 1 {
-			result[preferred[0]] = alternate
-		}
-	}
-	return result, nil
-}
+// func (c *Config) insteadOfURLs() (map[string][]string, error) {
+// 	ssh := c.ssh()
+// 	repos := c.repositories()
+// 	result := make(map[string][]string, len(repos))
+// 	for _, r := range repos {
+// 		preferred, err := c.allURLs(ssh, r)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		alternate, err := c.allURLs(!ssh, r)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		if len(preferred) > 1 {
+// 			result[preferred[0]] = append(preferred[1:], alternate...)
+// 		} else if len(preferred) == 1 {
+// 			result[preferred[0]] = alternate
+// 		}
+// 	}
+// 	return result, nil
+// }
 
 func findEventContext() map[string]interface{} {
 	if eventPath, found := os.LookupEnv("CLOUDBEES_EVENT_PATH"); found {
