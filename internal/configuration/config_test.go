@@ -651,6 +651,15 @@ AAAEApe1n3xwD4plUvs5E82QSBggtUz1M6HiiaVEYWp7ybpnm16ynTrfckn5DaF+lReWPC
 			},
 			setupCredentialsHelper: true,
 		},
+		{
+			name: "with token",
+			config: Config{
+				Repositories: "user/repo",
+				Provider:     "github",
+				Token:        "simple gh token",
+			},
+			setupCredentialsHelper: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -687,7 +696,7 @@ AAAEApe1n3xwD4plUvs5E82QSBggtUz1M6HiiaVEYWp7ybpnm16ynTrfckn5DaF+lReWPC
 			err := tt.config.Apply(context.Background())
 			assert.NoError(t, err)
 
-			if tt.config.ssh() {
+			if tt.config.ssh() || len(tt.config.Token) > 0 {
 				assert.Equal(t, false, gitCredentialsHelperInvoked)
 			} else {
 				assert.Equal(t, tt.setupCredentialsHelper, gitCredentialsHelperInvoked)
