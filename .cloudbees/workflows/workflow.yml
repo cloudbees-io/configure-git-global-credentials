@@ -39,19 +39,6 @@ jobs:
           destination: 020229604682.dkr.ecr.us-east-1.amazonaws.com/actions/configure-git-global-credentials:${{ cloudbees.scm.sha }},020229604682.dkr.ecr.us-east-1.amazonaws.com/actions/configure-git-global-credentials:latest
           labels: maintainer=sdp-pod-3,email=engineering@cloudbees.io
 
-  test-pat:
-    if: cloudbees.api.url == 'https://api.saas-preprod.beescloud.com'
-    needs:
-      - build
-    steps:
-      - uses: ./.cloudbees/testing
-        with:
-          token: ${{ secrets.IO_CONFIG_GIT_GLOBAL_PAT }}
-
-      - uses: docker://alpine/git:2.45.2
-        run: |
-          git clone https://github.com/cloudbees-io/checkout.git
-
   test-ssh-key:
     if: cloudbees.api.url == 'https://api.saas-preprod.beescloud.com'
     needs:

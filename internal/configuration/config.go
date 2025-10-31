@@ -29,20 +29,12 @@ type Config struct {
 	CloudBeesApiToken string `mapstructure:"cloudbees-api-token"`
 	// CloudBees API root URL to fetch authentication from
 	CloudBeesApiURL string `mapstructure:"cloudbees-api-url"`
-	// Personal access token (PAT) used to fetch the repositories
-	Token string
 	// SshKey SSH key used to fetch the repositories
 	SshKey string `mapstructure:"ssh-key"`
 	// SshKnownHosts Known hosts in addition to the user and global host key database
 	SshKnownHosts string `mapstructure:"ssh-known-hosts"`
 	// SshStrict Whether to perform strict host key checking
 	SshStrict bool `mapstructure:"ssh-strict"`
-	// GitHubServerURL the base URL for the GitHub instance that you are trying to clone from
-	GitHubServerURL string `mapstructure:"github-server-url"`
-	// BitbucketServerURL the base URL for the Bitbucket instance that you are trying to clone from
-	BitbucketServerURL string `mapstructure:"bitbucket-server-url"`
-	// GitLabServerURL the base URL for the GitLab instance that you are trying to clone from
-	// GitLabServerURL string `mapstructure:"gitlab-server-url"`
 }
 
 const (
@@ -80,13 +72,7 @@ var loadConfig = func(scope config.Scope) (_ *format.Config, _ string, retErr er
 }
 
 func (c *Config) populateDefaults(ctx context.Context) error {
-	c.Token = strings.TrimSpace(c.Token)
 	c.SshKey = strings.TrimSpace(c.SshKey)
-
-	if c.Token != "" && c.SshKey != "" {
-		return fmt.Errorf("input parameters 'token' and 'ssh-key' are mutually exclusive")
-	}
-
 	return nil
 }
 
