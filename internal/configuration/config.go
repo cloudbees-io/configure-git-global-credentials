@@ -90,69 +90,51 @@ func (c *Config) populateDefaults(ctx context.Context) error {
 	return nil
 }
 
-// Apply applies the configuration to the Git Global config
-func (c *Config) Apply(ctx context.Context) error {
-
-	if err := c.populateDefaults(ctx); err != nil {
-		return err
-	}
-
-	fmt.Println("🔄 Parsing existing Git global config ...")
+func (c *Config) setupSsh(ctx context.Context) error {
 
 	cfg, cfgPath, err := loadConfig(config.GlobalScope)
 	if err != nil {
 		return err
 	}
-
-	fmt.Printf("✅ Git global config at %s parsed\n", cfgPath)
-
 	homePath := os.Getenv("HOME")
 	actionPath := filepath.Join(homePath, ".cloudbees-configure-git-global-credentials", c.uniqueId())
 	if err := os.MkdirAll(actionPath, os.ModePerm); err != nil {
 		return err
 	}
 
-	if !c.ssh() {
-		repoUrlArr := c.repositories()
-		fmt.Printf("repoUrlArr %v\n", repoUrlArr)
-		filterUrl := make([]string, 0, len(repoUrlArr))
-		filterUrl = append(filterUrl, repoUrlArr...)
-		return invokeGitCredentialsHelper(ctx, cbGitCredentialsHelperPath, cfgPath, c.CloudBeesApiURL, c.CloudBeesApiToken, filterUrl)
-	} else {
-		// check if the SSH key looks to be a base64 encoded private key that the user forgot to decode
-		if decoded, err := base64.StdEncoding.DecodeString(c.SshKey); err == nil {
-			sshKey := string(decoded)
-			if err == nil && strings.Contains(sshKey, "-----BEGIN") && strings.Contains(sshKey, "PRIVATE KEY-----") {
-				fmt.Println("✅ Base64 decoded SSH key")
-				c.SshKey = sshKey
-			}
+	// check if the SSH key looks to be a base64 encoded private key that the user forgot to decode
+	if decoded, err := base64.StdEncoding.DecodeString(c.SshKey); err == nil {
+		sshKey := string(decoded)
+		if err == nil && strings.Contains(sshKey, "-----BEGIN") && strings.Contains(sshKey, "PRIVATE KEY-----") {
+			fmt.Println("✅ Base64 decoded SSH key")
+			c.SshKey = sshKey
 		}
-		if _, err = ssh.ParseRawPrivateKey([]byte(c.SshKey)); err != nil {
-			fmt.Println("❌ Could not parse supplied SSH key")
-			return fmt.Errorf("could not parse supplied SSH key: %w", err)
-		}
-		fmt.Println("🔄 Installing SSH private key ...")
-
-		var sshKeyPath string
-		if sshKeyPath, err = GenerateSSHKey(ctx, actionPath, c.SshKey); err != nil {
-			return err
-		}
-
-		var sshKnownHostsPath string
-		if sshKnownHostsPath, err = GenerateSSHKnownHosts(homePath, actionPath, c.SshKnownHosts); err != nil {
-			return err
-		}
-
-		var sshCommand string
-		if sshCommand, err = GenerateSSHCommand(sshKeyPath, c.SshStrict, sshKnownHostsPath); err != nil {
-			return err
-		}
-
-		cfg.Section("core").SetOption("sshCommand", sshCommand)
-
-		fmt.Println("✅ SSH private key installed")
 	}
 
+	if _, err := ssh.ParseRawPrivateKey([]byte(c.SshKey)); err != nil {
+		fmt.Println("❌ Could not parse supplied SSH key")
+		return fmt.Errorf("could not parse supplied SSH key: %w", err)
+	}
+	fmt.Println("🔄 Installing SSH private key ...")
+
+	sshKeyPath, err := GenerateSSHKey(ctx, actionPath, c.SshKey)
+	if err != nil {
+		return err
+	}
+
+	sshKnownHostsPath, err := GenerateSSHKnownHosts(homePath, actionPath, c.SshKnownHosts)
+	if err != nil {
+		return err
+	}
+
+	sshCommand, err := GenerateSSHCommand(sshKeyPath, c.SshStrict, sshKnownHostsPath)
+	if err != nil {
+		return err
+	}
+
+	cfg.Section("core").SetOption("sshCommand", sshCommand)
+
+	fmt.Println("✅ SSH private key installed")
 	fmt.Printf("🔄 Updating %s ...\n", cfgPath)
 
 	var b bytes.Buffer
@@ -169,8 +151,39 @@ func (c *Config) Apply(ctx context.Context) error {
 	return nil
 }
 
-var invokeGitCredentialsHelper = func(ctx context.Context, path, gitConfigPath, cloudbeesApiURL, cloudbeesApiToken string, filterGitUrls []string) error {
+// Apply applies the configuration to the Git Global config
+func (c *Config) Apply(ctx context.Context) error {
 
+	if err := c.populateDefaults(ctx); err != nil {
+		return err
+	}
+
+	fmt.Println("🔄 Parsing existing Git global config ...")
+
+	_, cfgPath, err := loadConfig(config.GlobalScope)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("✅ Git global config at %s parsed\n", cfgPath)
+
+	repoUrlArr := c.repositories()
+	fmt.Printf("repoUrlArr %v\n", repoUrlArr)
+	filterUrl := make([]string, 0, len(repoUrlArr))
+	filterUrl = append(filterUrl, repoUrlArr...)
+	err = invokeGitCredentialsHelper(ctx, cbGitCredentialsHelperPath, cfgPath, c.CloudBeesApiURL, c.CloudBeesApiToken, filterUrl)
+	if err != nil {
+		return err
+	}
+
+	if c.ssh() {
+		return c.setupSsh(ctx)
+	}
+
+	return nil
+}
+
+var invokeGitCredentialsHelper = func(ctx context.Context, path, gitConfigPath, cloudbeesApiURL, cloudbeesApiToken string, filterGitUrls []string) error {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return err
