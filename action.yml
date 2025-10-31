@@ -18,6 +18,7 @@ inputs:
       Configuring this value in conjunction with `ssh-key` is an error as the SSH key has to be installed for all SSH
       repositories.
     required: false
+    default: "${{ cloudbees.scm.repositoryUrl }}"
   cloudbees-api-token:
     description: >
       The CloudBees API Token to use for fetching SCM tokens unless `token` or `ssh-key` have been configured
@@ -25,11 +26,6 @@ inputs:
   cloudbees-api-url:
     description: The CloudBees API root URL to use for fetching SCM tokens
     default: "${{ cloudbees.api.url }}"
-  token:
-    description: >
-      Personal access token (PAT) used to fetch the repository. The PAT is configured
-      with the local git config, which enables your scripts to run authenticated git
-      commands.
   ssh-key:
     description: >
       SSH key used to fetch repositories. The SSH key is configured with the global
