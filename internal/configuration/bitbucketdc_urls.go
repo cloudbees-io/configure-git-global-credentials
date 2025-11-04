@@ -54,7 +54,7 @@ func (s bitbucketDatacenterURLSource) repositoryURLs(c *Config, ssh bool, reposi
 	}
 	preferred := parsed.JoinPath("scm", repository+".git")
 	if !ssh {
-		return []string{parsed.String()}, nil
+		return []string{preferred.String()}, nil
 	}
 	// TODO for Bitbucket server, query the API and discover the ssh port
 	return []string{
