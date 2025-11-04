@@ -70,7 +70,6 @@ var loadConfig = func(scope config.Scope) (_ *format.Config, _ string, retErr er
 }
 
 func (c *Config) validateAndPopulateDefaults(ctx context.Context) error {
-	c.SshKey = strings.TrimSpace(c.SshKey)
 	if c.ssh() {
 		for _, sshUrl := range c.repositories() {
 			if !isSSHURL(sshUrl) {
