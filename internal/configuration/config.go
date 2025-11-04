@@ -5,9 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -119,6 +117,11 @@ func (c *Config) setupSsh(ctx context.Context) error {
 	}
 
 	cfg.Section("core").SetOption("sshCommand", sshCommand)
+	for _, sshUrl := range c.repositories() {
+		urlSection := cfg.Section("url")
+		urlHostEntry := urlSection.Subsection(sshUrl)
+		urlHostEntry.SetOption("insteadOf", sshUrl)
+	}
 
 	fmt.Println("✅ SSH private key installed")
 	fmt.Printf("🔄 Updating %s ...\n", cfgPath)
@@ -223,136 +226,4 @@ func (c *Config) uniqueId() string {
 	}
 	bs := h.Sum(nil)
 	return fmt.Sprintf("%x", bs)[0:16]
-}
-
-// func (c *Config) insteadOfURLs() (map[string][]string, error) {
-// 	ssh := c.ssh()
-// 	repos := c.repositories()
-// 	result := make(map[string][]string, len(repos))
-// 	for _, r := range repos {
-// 		preferred, err := c.allURLs(ssh, r)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		alternate, err := c.allURLs(!ssh, r)
-// 		if err != nil {
-// 			return nil, err
-// 		}
-// 		if len(preferred) > 1 {
-// 			result[preferred[0]] = append(preferred[1:], alternate...)
-// 		} else if len(preferred) == 1 {
-// 			result[preferred[0]] = alternate
-// 		}
-// 	}
-// 	return result, nil
-// }
-
-func findEventContext() map[string]interface{} {
-	if eventPath, found := os.LookupEnv("CLOUDBEES_EVENT_PATH"); found {
-		return safeLoadEventContext(eventPath)
-	} else if homePath, found := os.LookupEnv("CLOUDBEES_HOME"); found {
-		// TODO remove when CLOUDBEES_EVENT_PATH is exposed in the environment
-		return safeLoadEventContext(filepath.Join(homePath, "event.json"))
-	}
-	return make(map[string]interface{})
-}
-
-// safeLoadEventContext attempts to load the event context from the JSON file at the supplied path always returning
-// a (possibly empty) map.
-func safeLoadEventContext(path string) map[string]interface{} {
-	c, err := loadEventContext(path)
-	if err != nil {
-		return make(map[string]interface{})
-	}
-	return c
-}
-
-// loadEventContext attempts to load the event context from the JSON file at the supplied path.
-func loadEventContext(path string) (map[string]interface{}, error) {
-	var bytes []byte
-	var err error
-
-	if bytes, err = os.ReadFile(path); err != nil {
-		// best effort
-		return nil, err
-	}
-
-	var event map[string]interface{}
-	if err = json.Unmarshal(bytes, &event); err != nil {
-		// best effort
-		return nil, err
-	}
-
-	return event, nil
-}
-
-func getStringFromMap(m map[string]interface{}, key string) (string, bool) {
-	i, found := m[key]
-	if !found {
-		return "", false
-	}
-	if s, ok := i.(string); ok {
-		return s, true
-	}
-	return "", false
-}
-
-func getBoolFromMap(m map[string]interface{}, key string) (bool, bool) {
-	i, found := m[key]
-	if !found {
-		return false, false
-	}
-	if v, ok := i.(bool); ok {
-		return v, true
-	}
-	return false, false
-}
-
-func getMapFromMap(m map[string]interface{}, key string) (map[string]interface{}, bool) {
-	i, found := m[key]
-	if !found {
-		return map[string]interface{}{}, false
-	}
-	if v, ok := i.(map[string]interface{}); ok {
-		return v, true
-	}
-	return map[string]interface{}{}, false
-}
-
-func copyFileHelper(dst string, src string) (err error) {
-	s, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer func(f *os.File) {
-		err2 := f.Close()
-		if err2 != nil && err == nil {
-			err = err2
-		}
-	}(s)
-
-	if stat, err := os.Stat(dst); err == nil {
-		// set up to force delete
-		if err := os.Chmod(dst, stat.Mode()|0222); err != nil {
-			return err
-		}
-		if err := os.Remove(dst); err != nil {
-			return err
-		}
-	}
-
-	// Create the destination file with default permission
-	d, err := os.OpenFile(dst, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0555)
-	if err != nil {
-		return err
-	}
-	defer func(f *os.File) {
-		err2 := f.Close()
-		if err2 != nil && err == nil {
-			err = err2
-		}
-	}(d)
-
-	_, err = io.Copy(d, s)
-	return err
 }
