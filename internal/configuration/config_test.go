@@ -593,6 +593,34 @@ func TestConfig_insteadOfURLs(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "bitbucket datacenter with repo",
+			fields: fields{
+				Provider:           "bitbucket_datacenter",
+				Repositories:       "example/foo",
+				BitbucketServerURL: "https://my-bbs.example.com",
+			},
+			want: map[string][]string{
+				"https://my-bbs.example.com/scm/example/foo.git": {
+					"git@my-bbs.example.com:scm/example/foo.git",
+					"ssh://git@my-bbs.example.com/scm/example/foo.git",
+				},
+			},
+		},
+		{
+			name: "bitbucket datacenter with repo with scm path in url",
+			fields: fields{
+				Provider:           "bitbucket_datacenter",
+				Repositories:       "example/foo",
+				BitbucketServerURL: "https://my-bbs.example.com/scm",
+			},
+			want: map[string][]string{
+				"https://my-bbs.example.com/scm/example/foo.git": {
+					"git@my-bbs.example.com:/scm/example/foo.git",
+					"ssh://git@my-bbs.example.com/scm/example/foo.git",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

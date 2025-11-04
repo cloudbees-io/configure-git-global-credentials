@@ -84,7 +84,6 @@ var loadConfig = func(scope config.Scope) (_ *format.Config, _ string, retErr er
 
 func (c *Config) populateDefaults(ctx context.Context) error {
 	c.Token = strings.TrimSpace(c.Token)
-	c.SshKey = strings.TrimSpace(c.SshKey)
 
 	if c.Token != "" && c.SshKey != "" {
 		return fmt.Errorf("input parameters 'token' and 'ssh-key' are mutually exclusive")
