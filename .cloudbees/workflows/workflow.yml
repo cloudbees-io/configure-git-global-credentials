@@ -71,7 +71,8 @@ jobs:
 
       - uses: docker://alpine/git:2.45.2
         run: |
-          git clone https://github.com/cloudbees-io/checkout.git
+          # using private repo with a integration
+          git clone https://github.com/calculi-corp/core-data-cache.git
 
   test-job-token-own-cb-org:
     if: cloudbees.api.url == 'https://api.saas-preprod.beescloud.com'
@@ -84,7 +85,7 @@ jobs:
       - uses: ./.cloudbees/testing
         with:
           # a repository in the same CloudBees org as this repo even if differing GitHub org
-          repositories: calculi-corp/*
+          repositories: https://github.com/calculi-corp
 
       - uses: docker://alpine/git:2.45.2
         run: |
@@ -100,7 +101,7 @@ jobs:
     steps:
       - uses: ./.cloudbees/testing
         with:
-          repositories: calculi-corp/*
+          repositories: https://github.com/calculi-corp
       - uses: docker://golang:1.24.6
         run: |
           mkdir test
