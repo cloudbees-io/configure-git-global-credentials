@@ -359,19 +359,7 @@ var invokeGitCredentialsHelper = func(ctx context.Context, path, gitConfigPath, 
 
 	cmd.Env = append(os.Environ(), fmt.Sprintf("%s=%s", tokenEnv, cloudbeesApiToken))
 
-	err = cmd.Run()
-	if err != nil {
-		return err
-	}
-
-	gitConfigPathBytes, err := os.ReadFile(gitConfigPath)
-	if err != nil {
-		return err
-	}
-
-	internal.Debug("Git config after invoking git-credential-cloudbees:\n%s", string(gitConfigPathBytes))
-
-	return nil
+	return cmd.Run()
 }
 
 func (c *Config) providerUsername() string {
