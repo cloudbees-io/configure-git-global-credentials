@@ -68,6 +68,8 @@ jobs:
       scm-token-org: read
     steps:
       - uses: ./.cloudbees/testing
+        with:
+          repositories: https://github.com/calculi-corp/core-data-cache
 
       - uses: docker://alpine/git:2.45.2
         run: |
