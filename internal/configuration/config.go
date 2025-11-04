@@ -160,16 +160,12 @@ func (c *Config) Apply(ctx context.Context) error {
 	fmt.Printf("repoUrlArr %v\n", repoUrlArr)
 	filterUrl := make([]string, 0, len(repoUrlArr))
 	filterUrl = append(filterUrl, repoUrlArr...)
-	err = invokeGitCredentialsHelper(ctx, cbGitCredentialsHelperPath, cfgPath, c.CloudBeesApiURL, c.CloudBeesApiToken, filterUrl)
-	if err != nil {
-		return err
-	}
 
 	if c.ssh() {
 		return c.setupSsh(ctx)
+	} else {
+		return invokeGitCredentialsHelper(ctx, cbGitCredentialsHelperPath, cfgPath, c.CloudBeesApiURL, c.CloudBeesApiToken, filterUrl)
 	}
-
-	return nil
 }
 
 var invokeGitCredentialsHelper = func(ctx context.Context, path, gitConfigPath, cloudbeesApiURL, cloudbeesApiToken string, filterGitUrls []string) error {

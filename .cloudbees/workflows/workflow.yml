@@ -71,11 +71,6 @@ jobs:
         with:
           repositories: https://github.com/calculi-corp/core-data-cache
 
-      - uses: docker://alpine:3.20
-        name: cat git-config
-        run: |
-          cat /cloudbees/home/.gitconfig
-
       - uses: docker://alpine/git:2.45.2
         run: |
           # using private repo with a integration
