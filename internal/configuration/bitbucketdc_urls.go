@@ -52,7 +52,7 @@ func (s bitbucketDatacenterURLSource) repositoryURLs(c *Config, ssh bool, reposi
 	if err != nil {
 		return nil, err
 	}
-	preferred := parsed.JoinPath(repository + ".git")
+	preferred := parsed.JoinPath("scm", repository+".git")
 	if !ssh {
 		return []string{parsed.String()}, nil
 	}
