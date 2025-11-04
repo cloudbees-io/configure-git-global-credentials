@@ -69,9 +69,29 @@ var loadConfig = func(scope config.Scope) (_ *format.Config, _ string, retErr er
 	return &result, paths[0], nil
 }
 
-func (c *Config) populateDefaults(ctx context.Context) error {
+func (c *Config) validateAndPopulateDefaults(ctx context.Context) error {
 	c.SshKey = strings.TrimSpace(c.SshKey)
+	if c.ssh() {
+		for _, sshUrl := range c.repositories() {
+			if !isSSHURL(sshUrl) {
+				return fmt.Errorf("invalid SSH URL: %s", sshUrl)
+			}
+		}
+	}
+
 	return nil
+}
+
+const userAndHostRegex = `([a-zA-Z][-a-zA-Z0-9_]*@)?[a-z0-9][-a-z0-9_\.]*`
+
+// Matches SSH URLs in the format: ssh://user@host[:port]/path
+var sshURLRegexScheme = regexp.MustCompile(fmt.Sprintf(`^ssh://%s(:|/)(/?[\w_\-\.~]+)*$`, userAndHostRegex))
+
+// Matches SSH URLs in the format: user@host:path
+var sshURLRegexScp = regexp.MustCompile(fmt.Sprintf(`^%s:/?[\w_\-\.~]+(/?[\w_\-\.~]+)*$`, userAndHostRegex))
+
+func isSSHURL(urlStr string) bool {
+	return sshURLRegexScheme.MatchString(urlStr) || sshURLRegexScp.MatchString(urlStr)
 }
 
 func (c *Config) setupSsh(ctx context.Context) error {
@@ -143,7 +163,7 @@ func (c *Config) setupSsh(ctx context.Context) error {
 // Apply applies the configuration to the Git Global config
 func (c *Config) Apply(ctx context.Context) error {
 
-	if err := c.populateDefaults(ctx); err != nil {
+	if err := c.validateAndPopulateDefaults(ctx); err != nil {
 		return err
 	}
 
