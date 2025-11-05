@@ -187,7 +187,6 @@ func (c *Config) Apply(ctx context.Context) error {
 	fmt.Printf("✅ Git global config at %s parsed\n", cfgPath)
 
 	repoUrlArr := c.repositories()
-	fmt.Printf("repoUrlArr %v\n", repoUrlArr)
 	filterUrl := make([]string, 0, len(repoUrlArr))
 	filterUrl = append(filterUrl, repoUrlArr...)
 
