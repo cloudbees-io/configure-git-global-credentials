@@ -79,7 +79,6 @@ func doConfigure(command *cobra.Command, args []string) error {
 	if err := viper.Unmarshal(&cfg); err != nil {
 		return err
 	}
-	fmt.Printf("cfg %+v\n", cfg)
 
 	return cfg.Apply(ctx)
 }
