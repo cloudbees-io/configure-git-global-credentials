@@ -92,16 +92,23 @@ func TestConfig_Git_Credentials_Helper_Apply(t *testing.T) {
 		expectedGitConfig string
 	}{
 		{
-			name: "Test with repository",
+			name: "Test with invalid repository url",
 			config: Config{
 				Repositories: "github.com/user/repo",
+			},
+			wantErr: true,
+		},
+		{
+			name: "Test with repository",
+			config: Config{
+				Repositories: "https://github.com/user/repo",
 			},
 			wantErr: false,
 		},
 		{
 			name: "Test with multiple repositories",
 			config: Config{
-				Repositories: "github.com/user/repo1,github.com/user/repo2",
+				Repositories: "https://github.com/user/repo1, https://github.com/user/repo2",
 			},
 			wantErr: false,
 		},

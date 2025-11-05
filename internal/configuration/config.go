@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -69,11 +70,21 @@ var loadConfig = func(scope config.Scope) (_ *format.Config, _ string, retErr er
 	return &result, paths[0], nil
 }
 
-func (c *Config) validateAndPopulateDefaults(ctx context.Context) error {
+func (c *Config) validate() error {
 	if c.ssh() {
 		for _, sshUrl := range c.repositories() {
 			if !isSSHURL(sshUrl) {
 				return fmt.Errorf("invalid SSH URL: %s", sshUrl)
+			}
+		}
+	} else {
+		for _, repoUrl := range c.repositories() {
+			parsedURL, err := url.Parse(repoUrl)
+			if err != nil {
+				return fmt.Errorf("invalid repository %q: %w", repoUrl, err)
+			}
+			if !parsedURL.IsAbs() || parsedURL.Host == "" {
+				return fmt.Errorf("invalid repository URL %q provided, expects full clone URL", repoUrl)
 			}
 		}
 	}
@@ -162,7 +173,7 @@ func (c *Config) setupSsh(ctx context.Context) error {
 // Apply applies the configuration to the Git Global config
 func (c *Config) Apply(ctx context.Context) error {
 
-	if err := c.validateAndPopulateDefaults(ctx); err != nil {
+	if err := c.validate(); err != nil {
 		return err
 	}
 
@@ -228,7 +239,7 @@ func (c *Config) repositories() []string {
 		return nil
 	}
 	re := regexp.MustCompile(`[ \t\r\n\f,]+`)
-	return re.Split(c.Repositories, -1)
+	return re.Split(strings.TrimSpace(c.Repositories), -1)
 }
 
 func (c *Config) uniqueId() string {
