@@ -35,30 +35,10 @@ CloudBees recommends that if you are using a Git client other than the official 
 
 | `repositories`
 | String
-| Required if `provider` is specified.
-| The repositories accessible via the token.
+| Yes
+| Repository clone URL. https://github.com/user/repo
 For listing multiple repositories, CloudBees recommends using a line break separator, although the `repositories` parameter is a whitespace and/or comma-separated list.
-Wildcard syntax supports only a trailing `/*` on a repository name, or the match-all value (`+*/*+`).
-
-| `provider`
-| String
-| CloudBees recommends specifying `provider` when specifying the provider server url, even for `github-server-url`, a case where it is technically considered redundant.
-| The source code management (SCM) provider.
-
-| `github-server-url`
-| String
-| No
-| The GitHub server URL.
-
-| `bitbucket-server-url`
-| String
-| No
-| The Bitbucket server URL.
-
-| `gitlab-server-url`
-| String
-| No
-| The GitLab server URL.
+Wildcard syntax supports only a trailing `/*` on a repository name, or the match-all value.
 
 |===
 
@@ -94,8 +74,8 @@ In your YAML file, add:
         with:
           token: ${{ secrets.MY_TOKEN }}
           repositories: |
-            example/foo
-            example/bar
+            https://github.com/user/repo
+            https://github.com/user/rep1
 ----
 
 === Configure a token for all repositories in a different SCM provider
@@ -110,8 +90,7 @@ In your YAML file, add:
         uses: cloudbees-io/configure-git-global-credentials@v1
         with:
           token: ${{ secrets.MY_GITLAB_TOKEN }}
-          provider: gitlab
-          repositories: example/*
+          repositories: https://github.com/org/
 ----
 
 === Configure a token for a GitHub Enterprise Server
@@ -126,9 +105,7 @@ In your YAML file, add:
         uses: cloudbees-io/configure-git-global-credentials@v1
         with:
           token: ${{ secrets.MY_GHE_TOKEN }}
-          provider: github
-          github-server-url: https://my-ghes-server.example.com
-          repositories: "*/*"
+          repositories: https://github.beescloud.com/
 ----
 
 === Configure a token for GitHub SaaS, Bitbucket, or GitLab SCM provider instances
@@ -143,9 +120,7 @@ In your YAML file, add:
         uses: cloudbees-io/configure-git-global-credentials@v1
         with:
           token: ${{ secrets.MY_SCM_TOKEN }}
-          provider: bitbucket
-          bitbucket-server-url: https://my-bbdc-server.example.com
-          repositories: "*/*"
+          repositories: https://github.beescloud.com/
 ----
 
 === Configure a token when a step is repeated multiple times in a job
@@ -161,21 +136,18 @@ In your YAML file, add:
         with:
           token: ${{ secrets.MY_GITHUB_TOKEN }}
           repositories: |
-            example/foo
-            example/bar
+            https://github.com/user/repo1
+            https://github.com/user/repo2
       - name: Git global credentials for GHE
         uses: cloudbees-io/configure-git-global-credentials@v1
         with:
           token: ${{ secrets.MY_GHE_TOKEN }}
-          provider: github
-          github-server-url: https://my-ghes-server.example.com
-          repositories: "*/*"
+          repositories: https://github.beescloud.com/
       - name: Git global credentials for GitLab
         uses: cloudbees-io/configure-git-global-credentials@v1
         with:
           token: ${{ secrets.MY_GITLAB_TOKEN }}
-          provider: gitlab
-          repositories: example/*
+          repositories: https://github.com/org/
 ----
 
 == License
