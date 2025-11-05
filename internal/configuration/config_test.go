@@ -108,7 +108,8 @@ func TestConfig_Git_Credentials_Helper_Apply(t *testing.T) {
 		{
 			name: "Test with multiple repositories",
 			config: Config{
-				Repositories: "https://github.com/user/repo1, https://github.com/user/repo2",
+				// testcase supports both comma and space as separator
+				Repositories: "https://github.com/user/repo1, https://github.com/user/repo2 https://github.com/user/repo3",
 			},
 			wantErr: false,
 		},

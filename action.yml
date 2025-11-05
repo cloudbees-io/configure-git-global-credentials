@@ -5,18 +5,9 @@ description: 'Configures credentials in the Git global configuration'
 inputs:
   repositories:
     description: >
-      Whitespace and/or comma separated list of repository names with owner. For example, `actions/checkout`.
-      Alternatively if provider is `custom` then this is the clone URL of the repositories
-
-      If not specified and the `provider` has not been overridden the action will try to infer what the value should be
-      from the triggering event. For example if this action is run in the GitHub repository `example/foo` then the
-      inferred default repositories value would be `example/*`
-
-      If a default value cannot be inferred then the action will fail in anticipation that you will explicitly
-      configure the value for subsequent runs.
-
-      Configuring this value in conjunction with `ssh-key` is an error as the SSH key has to be installed for all SSH
-      repositories.
+      Repository clone URL. seperated by commas or spaces or newlines
+      For example, "https://github.com/user/repo" or "https://github.com/user/repo1, https://github.com/user/repo2" or "https://github.com/user/repo1 https://github.com/user/repo2"
+      when using with ssh-key input, provide based urls like "ssh://github.com/user/repo"
     required: false
     default: "${{ cloudbees.scm.repositoryUrl }}"
   cloudbees-api-token:
