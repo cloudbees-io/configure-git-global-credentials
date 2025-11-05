@@ -172,7 +172,6 @@ func TestConfig_Git_Credentials_Helper_Apply(t *testing.T) {
 func helperBinary(t *testing.T, tempDir string) {
 	binPath := filepath.Join(tempDir, cbGitCredentialsHelper)
 	_, err := os.Create(binPath)
-	// err := os.WriteFile(binPath, []byte("dummy git credential helper"))
 	require.NoError(t, err)
 
 	err = os.Setenv("PATH", filepath.Dir(binPath))
