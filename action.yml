@@ -5,7 +5,7 @@ description: 'Configures credentials in the Git global configuration'
 inputs:
   repositories:
     description: >
-      Repository clone URL. seperated by commas or spaces or newlines
+      Repository clone URL. separated by commas or spaces or newlines
       For example, "https://github.com/user/repo" or "https://github.com/user/repo1, https://github.com/user/repo2" or "https://github.com/user/repo1 https://github.com/user/repo2"
       when using with ssh-key input, provide based urls like "ssh://github.com/user/repo"
     required: false
