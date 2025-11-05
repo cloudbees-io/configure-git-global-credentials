@@ -36,8 +36,8 @@ type Config struct {
 }
 
 const (
-	tokenEnv                   = "CLOUDBEES_API_TOKEN"
-	cbGitCredentialsHelperPath = "git-credential-cloudbees"
+	tokenEnv               = "CLOUDBEES_API_TOKEN"
+	cbGitCredentialsHelper = "git-credential-cloudbees"
 )
 
 var loadConfig = func(scope config.Scope) (_ *format.Config, _ string, retErr error) {
@@ -183,7 +183,7 @@ func (c *Config) Apply(ctx context.Context) error {
 	if c.ssh() {
 		return c.setupSsh(ctx)
 	} else {
-		return invokeGitCredentialsHelper(ctx, cbGitCredentialsHelperPath, cfgPath, c.CloudBeesApiURL, c.CloudBeesApiToken, filterUrl)
+		return invokeGitCredentialsHelper(ctx, cbGitCredentialsHelper, cfgPath, c.CloudBeesApiURL, c.CloudBeesApiToken, filterUrl)
 	}
 }
 

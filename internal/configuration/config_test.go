@@ -23,7 +23,7 @@ AAAEApe1n3xwD4plUvs5E82QSBggtUz1M6HiiaVEYWp7ybpnm16ynTrfckn5DaF+lReWPC
 -----END OPENSSH PRIVATE KEY-----
 `
 
-func TestConfig_Apply(t *testing.T) {
+func TestConfig_SSH_Apply(t *testing.T) {
 	tempDir := t.TempDir()
 	tests := []struct {
 		name              string
@@ -83,8 +83,86 @@ func TestConfig_Apply(t *testing.T) {
 	}
 }
 
+func TestConfig_Git_Credentials_Helper_Apply(t *testing.T) {
+	tempDir := t.TempDir()
+	tests := []struct {
+		name              string
+		config            Config
+		wantErr           bool
+		expectedGitConfig string
+	}{
+		{
+			name: "Test with repository",
+			config: Config{
+				Repositories: "github.com/user/repo",
+			},
+			wantErr: false,
+		},
+		{
+			name: "Test with multiple repositories",
+			config: Config{
+				Repositories: "github.com/user/repo1,github.com/user/repo2",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			helperBinary(t, tempDir)
+
+			tempGitConfigPath := ""
+			// mock loadConfig helper function
+			loadConfig = func(scope config.Scope) (_ *format.Config, _ string, retErr error) {
+
+				tempGitConfigPath = filepath.Join(tempDir, ".gitconfig")
+				_, err := os.Create(tempGitConfigPath)
+				require.NoError(t, err)
+
+				d := format.NewDecoder(bytes.NewReader([]byte{}))
+				result := format.Config{}
+				err = d.Decode(&result)
+				require.NoError(t, err)
+
+				return &result, tempGitConfigPath, nil
+			}
+
+			gitCredentialsHelperInvoked := false
+			pathActual := ""
+			gitConfigPathActual := ""
+			cloudbeesApiURLActual := ""
+			cloudbeesApiTokenActual := ""
+			filterGitUrlsActual := []string{}
+			// mock credentials helper function
+			invokeGitCredentialsHelper = func(ctx context.Context, path, gitConfigPath, cloudbeesApiURL, cloudbeesApiToken string, filterGitUrls []string) error {
+				gitCredentialsHelperInvoked = true
+				pathActual = path
+				gitConfigPathActual = gitConfigPath
+				cloudbeesApiURLActual = cloudbeesApiURL
+				cloudbeesApiTokenActual = cloudbeesApiToken
+				filterGitUrlsActual = filterGitUrls
+				return nil
+			}
+
+			context := context.Background()
+			err := tt.config.Apply(context)
+			assert.Equal(t, err != nil, tt.wantErr)
+
+			if !tt.wantErr {
+				assert.True(t, gitCredentialsHelperInvoked, "git credentials helper should be invoked")
+				assert.Equal(t, cbGitCredentialsHelper, pathActual)
+				assert.Equal(t, tempGitConfigPath, gitConfigPathActual)
+				assert.Equal(t, tt.config.CloudBeesApiURL, cloudbeesApiURLActual)
+				assert.Equal(t, tt.config.CloudBeesApiToken, cloudbeesApiTokenActual)
+				repoUrlArr := []string{}
+				repoUrlArr = append(repoUrlArr, tt.config.repositories()...)
+				assert.Equal(t, repoUrlArr, filterGitUrlsActual)
+			}
+
+		})
+	}
+}
 func helperBinary(t *testing.T, tempDir string) {
-	binPath := filepath.Join(tempDir, cbGitCredentialsHelperPath)
+	binPath := filepath.Join(tempDir, cbGitCredentialsHelper)
 	_, err := os.Create(binPath)
 	// err := os.WriteFile(binPath, []byte("dummy git credential helper"))
 	require.NoError(t, err)
