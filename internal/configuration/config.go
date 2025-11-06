@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
-	"encoding/base64"
 	"fmt"
 	"net/url"
 	"os"
@@ -114,15 +113,6 @@ func (c *Config) setupSsh(ctx context.Context) error {
 	actionPath := filepath.Join(homePath, ".cloudbees-configure-git-global-credentials", c.uniqueId())
 	if err := os.MkdirAll(actionPath, os.ModePerm); err != nil {
 		return err
-	}
-
-	// check if the SSH key looks to be a base64 encoded private key that the user forgot to decode
-	if decoded, err := base64.StdEncoding.DecodeString(c.SshKey); err == nil {
-		sshKey := string(decoded)
-		if err == nil && strings.Contains(sshKey, "-----BEGIN") && strings.Contains(sshKey, "PRIVATE KEY-----") {
-			fmt.Println("✅ Base64 decoded SSH key")
-			c.SshKey = sshKey
-		}
 	}
 
 	if _, err := ssh.ParseRawPrivateKey([]byte(c.SshKey)); err != nil {
