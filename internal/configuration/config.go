@@ -84,7 +84,7 @@ func (c *Config) validate() error {
 				return fmt.Errorf("invalid repository %q: %w", repoUrl, err)
 			}
 			if !parsedURL.IsAbs() || parsedURL.Host == "" {
-				return fmt.Errorf("invalid repository URL %q provided, expects full clone URL", repoUrl)
+				return fmt.Errorf("invalid repository URL %q provided, expecting a URL in the input", repoUrl)
 			}
 		}
 	}
