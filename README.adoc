@@ -38,7 +38,6 @@ CloudBees recommends that if you are using a Git client other than the official 
 | Yes
 | Repository clone URL. https://github.com/user/repo
 For listing multiple repositories, CloudBees recommends using a line break separator, although the `repositories` parameter is a whitespace and/or comma-separated list.
-Wildcard syntax supports only a trailing `/*` on a repository name, or the match-all value.
 
 |===
 

@@ -187,13 +187,11 @@ func (c *Config) Apply(ctx context.Context) error {
 	fmt.Printf("✅ Git global config at %s parsed\n", cfgPath)
 
 	repoUrlArr := c.repositories()
-	filterUrl := make([]string, 0, len(repoUrlArr))
-	filterUrl = append(filterUrl, repoUrlArr...)
 
 	if c.ssh() {
 		return c.setupSsh(ctx)
 	} else {
-		return invokeGitCredentialsHelper(ctx, cbGitCredentialsHelper, cfgPath, c.CloudBeesApiURL, c.CloudBeesApiToken, filterUrl)
+		return invokeGitCredentialsHelper(ctx, cbGitCredentialsHelper, cfgPath, c.CloudBeesApiURL, c.CloudBeesApiToken, repoUrlArr)
 	}
 }
 
