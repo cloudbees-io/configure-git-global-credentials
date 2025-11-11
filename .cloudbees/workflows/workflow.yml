@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - "*"
+  workflow_dispatch:
 
 jobs:
   build:
@@ -38,19 +39,6 @@ jobs:
           destination: 020229604682.dkr.ecr.us-east-1.amazonaws.com/actions/configure-git-global-credentials:${{ cloudbees.scm.sha }},020229604682.dkr.ecr.us-east-1.amazonaws.com/actions/configure-git-global-credentials:latest
           labels: maintainer=sdp-pod-3,email=engineering@cloudbees.io
 
-  test-pat:
-    if: cloudbees.api.url == 'https://api.saas-preprod.beescloud.com'
-    needs:
-      - build
-    steps:
-      - uses: ./.cloudbees/testing
-        with:
-          token: ${{ secrets.IO_CONFIG_GIT_GLOBAL_PAT }}
-
-      - uses: docker://alpine/git:2.45.2
-        run: |
-          git clone https://github.com/cloudbees-io/checkout.git
-
   test-ssh-key:
     if: cloudbees.api.url == 'https://api.saas-preprod.beescloud.com'
     needs:
@@ -80,10 +68,13 @@ jobs:
       scm-token-org: read
     steps:
       - uses: ./.cloudbees/testing
+        with:
+          repositories: https://github.com/calculi-corp/core-data-cache
 
       - uses: docker://alpine/git:2.45.2
         run: |
-          git clone https://github.com/cloudbees-io/checkout.git
+          # using private repo with a integration
+          git clone https://github.com/calculi-corp/core-data-cache
 
   test-job-token-own-cb-org:
     if: cloudbees.api.url == 'https://api.saas-preprod.beescloud.com'
@@ -96,7 +87,7 @@ jobs:
       - uses: ./.cloudbees/testing
         with:
           # a repository in the same CloudBees org as this repo even if differing GitHub org
-          repositories: calculi-corp/*
+          repositories: https://github.com/calculi-corp
 
       - uses: docker://alpine/git:2.45.2
         run: |
@@ -112,7 +103,7 @@ jobs:
     steps:
       - uses: ./.cloudbees/testing
         with:
-          repositories: calculi-corp/*
+          repositories: https://github.com/calculi-corp
       - uses: docker://golang:1.24.6
         run: |
           mkdir test

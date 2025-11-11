@@ -34,19 +34,14 @@ func init() {
 	replacer := strings.NewReplacer("-", "_")
 	viper.SetEnvKeyReplacer(replacer)
 
-	inputString("provider", "", "SCM provider that is hosting the repositories")
-	inputString("repositories", "", "Whitespace and/or comma separated list of repository names with owner")
+	inputString("repositories", "", "Whitespace and/or comma separated list of repository clone urls")
 	inputString("cloudbees-api-token", "", "CloudBees API token used to fetch authentication")
 	inputString("cloudbees-api-url", "", "CloudBees API root URL to fetch authentication from")
-	inputString("token", "", "Personal access token (PAT) used to fetch the repositories")
 	inputString("ssh-key", "", "SSH key used to fetch the repositories")
 	inputString("ssh-known-hosts", "", "Known hosts in addition to the user and global host key database")
 	inputBool("ssh-strict", true, "Whether to perform strict host key checking")
-	inputString("github-server-url", "", "The base URL for the GitHub instance that you are trying to clone from")
-	inputString("bitbucket-server-url", "", "The base URL for the Bitbucket instance that you are trying to clone from")
-	inputString("gitlab-server-url", "", "The base URL for the GitLab instance that you are trying to clone from")
 
-	rootCmd.AddCommand(helperCmd, configureCmd)
+	rootCmd.AddCommand(configureCmd)
 }
 
 func inputString(name string, value string, usage string) {
