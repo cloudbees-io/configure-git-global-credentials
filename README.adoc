@@ -95,7 +95,7 @@ If they belong to the same scm provider, use the url https://github.beescloud.co
           repositories: https://github.beescloud.com/
 ----
 
-=== using ssh, add the ssh key as secret and use ssh the ssh clone url for repositories
+=== Using SSH, add the SSH key as secret and use the SSH clone url for repositories
 
 In your YAML file, add:
 
