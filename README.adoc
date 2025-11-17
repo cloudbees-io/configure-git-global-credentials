@@ -61,7 +61,7 @@ Use the input `ssh-known-hosts` to configure additional hosts.
 
 == Usage examples
 
-=== for multiple repositories, onboard the specific repositories
+=== for multiple repositories, onboard the specific repositories by creating integration
 
 In your YAML file, add:
 
@@ -75,9 +75,7 @@ In your YAML file, add:
             https://github.com/user2/rep1
 ----
 
-=== when multiple repo belongs to the same org, add integration for the repositories 
-
-In your YAML file, add:
+if multiple repositories belong to the same org, use the url:  https://github.com/org/
 
 [source,yaml]
 ----
@@ -87,7 +85,17 @@ In your YAML file, add:
           repositories: https://github.com/org/
 ----
 
-=== integrate the repositories in a GitHub Enterprise Server
+if they belong to the same scm provider, use the url https://github.beescloud.com/
+
+[source,yaml]
+----
+      - name: Git global credentials
+        uses: cloudbees-io/configure-git-global-credentials@v2
+        with:
+          repositories: https://github.beescloud.com/
+----
+
+=== using ssh, add the ssh key as secret and use ssh the ssh clone url for repositories
 
 In your YAML file, add:
 
@@ -96,7 +104,8 @@ In your YAML file, add:
       - name: Git global credentials
         uses: cloudbees-io/configure-git-global-credentials@v2
         with:
-          repositories: https://github.beescloud.com/
+          repositories: "ssh://github.com/user/repo
+          ssh-key: ${{secret.<ssh-secret-name-placeholder>}}
 ----
 
 == License
