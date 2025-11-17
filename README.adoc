@@ -104,7 +104,7 @@ In your YAML file, add:
       - name: Git global credentials
         uses: cloudbees-io/configure-git-global-credentials@v2
         with:
-          repositories: "ssh://github.com/user/repo
+          repositories: "ssh://github.com/user/repo"
           ssh-key: ${{secrets.<ssh-secret-name-placeholder>}}
 ----
 
