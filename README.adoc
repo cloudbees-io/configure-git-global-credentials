@@ -85,7 +85,7 @@ If multiple repositories belong to the same org, use the url:  https://github.co
           repositories: https://github.com/org/
 ----
 
-if they belong to the same scm provider, use the url https://github.beescloud.com/
+If they belong to the same scm provider, use the url https://github.beescloud.com/
 
 [source,yaml]
 ----
