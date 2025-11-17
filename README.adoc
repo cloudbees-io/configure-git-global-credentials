@@ -75,7 +75,7 @@ In your YAML file, add:
             https://github.com/user2/rep1
 ----
 
-if multiple repositories belong to the same org, use the url:  https://github.com/org/
+If multiple repositories belong to the same org, use the url:  https://github.com/org/
 
 [source,yaml]
 ----
