@@ -28,16 +28,39 @@ CloudBees recommends that if you are using a Git client other than the official 
 | Required?
 | Description
 
-| `token`
-| String
-| Yes
-| The token to configure.
-
 | `repositories`
 | String
 | Yes
 | Repository clone URL. https://github.com/user/repo
 For listing multiple repositories, CloudBees recommends using a line break separator, although the `repositories` parameter is a whitespace and/or comma-separated list.
+
+| `set-safe-directory`
+| Boolean
+| No
+| Default is `true`. When `true`, adds a repository path as `safe.directory` for the Git global config, by running `git config --global --add safe.directory <path>`.
+
+| `ssh-key`
+| String
+| No
+| SSH key used to fetch the repository.
+The SSH key is configured with the local Git config, which enables scripts to run authenticated Git commands.
+
+We recommend using the platform authentication instead of SSH keys.   Do not use SSH keys if using the  authentication built into the platform for the workflow repository or  authentication using the `configure-git-global-credentials` action is possible.
+
+
+
+| `ssh-known-hosts`
+| String
+| No
+| A list of known SSH hosts that should be added to the global host database. Use the utility `ssh-keyscan` to get public SSH keys for a host.
+
+The public keys for GitHub and Bitbucket are  implicitly added by default.
+
+| `ssh-strict`
+| Boolean
+| No
+| Default is `true`. When `true`, performs strict host key checking, by adding the options `StrictHostKeyChecking=yes` and `CheckHostIP=no` to the SSH command line.
+Use the input `ssh-known-hosts` to configure additional hosts.
 
 |===
 
