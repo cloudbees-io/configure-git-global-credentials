@@ -34,11 +34,6 @@ CloudBees recommends that if you are using a Git client other than the official 
 | Repository clone URL. https://github.com/user/repo
 For listing multiple repositories, CloudBees recommends using a line break separator, although the `repositories` parameter is a whitespace and/or comma-separated list.
 
-| `set-safe-directory`
-| Boolean
-| No
-| Default is `true`. When `true`, adds a repository path as `safe.directory` for the Git global config, by running `git config --global --add safe.directory <path>`.
-
 | `ssh-key`
 | String
 | No
