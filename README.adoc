@@ -38,7 +38,7 @@ For listing multiple repositories, CloudBees recommends using a line break separ
 | String
 | No
 | SSH key used to fetch the repository.
-The SSH key is configured with the local Git config, which enables scripts to run authenticated Git commands.
+The SSH key used for fetching a repository using it's SSH clone URL (passed via the `repositories` input). The SSH key input is only relevant when the user defines an SSH clone URL via the `repositories` input. In all other cases the action fetches the pre-configured credentials setup on Unify for the specified `repositories`.
 
 We recommend using the platform authentication instead of SSH keys.   Do not use SSH keys if using the  authentication built into the platform for the workflow repository or  authentication using the `configure-git-global-credentials` action is possible.
 
