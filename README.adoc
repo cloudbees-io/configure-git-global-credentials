@@ -49,7 +49,7 @@ We recommend using the platform authentication instead of SSH keys.   Do not use
 | No
 | A list of known SSH hosts that should be added to the global host database. Use the utility `ssh-keyscan` to get public SSH keys for a host.
 
-The public keys for GitHub and Bitbucket are  implicitly added by default.
+The public keys for GitHub and Bitbucket are added by default.
 
 | `ssh-strict`
 | Boolean
