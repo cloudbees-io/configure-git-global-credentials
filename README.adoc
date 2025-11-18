@@ -85,7 +85,7 @@ For configuring access for all repositories within a GitHub project/user namespa
           repositories: https://github.com/org/
 ----
 
-If they belong to the same scm provider, use the url https://github.beescloud.com/
+You can also specify a host URL in the `repositories` input to grant access to all "accessible" repositories. This is dependent on the SCM Integration and credentials, permissions configured for those credentials which is setup on Unify for this component and it's parent Organization(s).
 
 [source,yaml]
 ----
