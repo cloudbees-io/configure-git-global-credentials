@@ -75,7 +75,7 @@ In your YAML file, add:
             https://github.com/user2/rep1
 ----
 
-If multiple repositories belong to the same org, use the url:  https://github.com/org/
+For configuring access for all repositories within a GitHub project/user namespace, you can specify the Project URL as an input: https://github.com/org/
 
 [source,yaml]
 ----
