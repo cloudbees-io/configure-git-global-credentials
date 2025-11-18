@@ -95,7 +95,9 @@ If they belong to the same scm provider, use the url https://github.beescloud.co
           repositories: https://github.beescloud.com/
 ----
 
-=== Using SSH, add the SSH key as secret and use the SSH clone url for repositories
+=== Using SSH, add the SSH key as a Secret property on Unify and use the SSH clone url in the `repositories` input.
+
+NOTE: When defining the SSH key secret please ensure that there is a new line at the end of the secret.
 
 In your YAML file, add:
 
