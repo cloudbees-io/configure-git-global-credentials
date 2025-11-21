@@ -28,125 +28,84 @@ CloudBees recommends that if you are using a Git client other than the official 
 | Required?
 | Description
 
-| `token`
-| String
-| Yes
-| The token to configure.
-
 | `repositories`
 | String
 | Yes
 | Repository clone URL. https://github.com/user/repo
 For listing multiple repositories, CloudBees recommends using a line break separator, although the `repositories` parameter is a whitespace and/or comma-separated list.
 
+| `ssh-key`
+| String
+| No
+| SSH key used to fetch the repository.
+The SSH key used for fetching a repository using it's SSH clone URL (passed via the `repositories` input). The SSH key input is only relevant when the user defines an SSH clone URL via the `repositories` input. In all other cases the action fetches the pre-configured credentials setup on Unify for the specified `repositories`.
+
+
+
+| `ssh-known-hosts`
+| String
+| No
+| A list of known SSH hosts that should be added to the global host database. Use the utility `ssh-keyscan` to get public SSH keys for a host.
+
+The public keys for GitHub and Bitbucket are added by default.
+
+| `ssh-strict`
+| Boolean
+| No
+| Default is `true`. When `true`, performs strict host key checking, by adding the options `StrictHostKeyChecking=yes` and `CheckHostIP=no` to the SSH command line.
+Use the input `ssh-known-hosts` to configure additional hosts.
+
 |===
 
 == Usage examples
 
-Use this action to configure a Git token from a secret. This action does not currently work with configuring an SSH private key from a secret, or using CloudBees platform authentication.
-
-=== Configure a token for all repositories in the same organization
-
-Use a token for all repositories in the same organization as the workflow repository.
-For example, the action is run from `+https://github.com/example/myjob+` repository, then the personal access token is configured for all repositories in the `+https://github.com/example+` organization.
+=== For multiple repositories, onboard the specific repositories by creating integration
 
 In your YAML file, add:
 
 [source,yaml]
 ----
       - name: Git global credentials
-        uses: cloudbees-io/configure-git-global-credentials@v1
+        uses: cloudbees-io/configure-git-global-credentials@v2
         with:
-          token: ${{ secrets.MY_TOKEN }}
-----
-
-=== Configure a token for specific repositories in the same SCM provider
-
-Use a token for only the named repositories in the same SCM provider as the workflow repository.
-
-In your YAML file, add:
-
-[source,yaml]
-----
-      - name: Git global credentials
-        uses: cloudbees-io/configure-git-global-credentials@v1
-        with:
-          token: ${{ secrets.MY_TOKEN }}
           repositories: |
-            https://github.com/user/repo
-            https://github.com/user/rep1
+            https://github.com/user1/repo
+            https://github.com/user2/rep1
 ----
 
-=== Configure a token for all repositories in a different SCM provider
-
-Use a token for all repositories in a named organization in a different SCM provider from that of the workflow repository.
-
-In your YAML file, add:
+For configuring access for all repositories within a GitHub project/user namespace, you can specify the Project URL as an input: https://github.com/org/
 
 [source,yaml]
 ----
       - name: Git global credentials
-        uses: cloudbees-io/configure-git-global-credentials@v1
+        uses: cloudbees-io/configure-git-global-credentials@v2
         with:
-          token: ${{ secrets.MY_GITLAB_TOKEN }}
           repositories: https://github.com/org/
 ----
 
-=== Configure a token for a GitHub Enterprise Server
+You can also specify a host URL in the `repositories` input to grant access to all "accessible" repositories. This is dependent on the SCM Integration and credentials, permissions configured for those credentials which is setup on Unify for this component and it's parent Organization(s).
 
-Use a token for a GitHub Enterprise Server.
+[source,yaml]
+----
+      - name: Git global credentials
+        uses: cloudbees-io/configure-git-global-credentials@v2
+        with:
+          repositories: https://github.beescloud.com/
+----
+
+=== Using SSH, add the SSH key as a Secret property on Unify and use the SSH clone url in the `repositories` input.
+
+NOTE: When defining the SSH key secret please ensure that there is a new line at the end of the secret.
 
 In your YAML file, add:
 
 [source,yaml]
 ----
       - name: Git global credentials
-        uses: cloudbees-io/configure-git-global-credentials@v1
+        uses: cloudbees-io/configure-git-global-credentials@v2
         with:
-          token: ${{ secrets.MY_GHE_TOKEN }}
-          repositories: https://github.beescloud.com/
-----
-
-=== Configure a token for GitHub SaaS, Bitbucket, or GitLab SCM provider instances
-
-Use a token for GitHub SaaS, Bitbucket, or GitLab SCM provider instances.
-
-In your YAML file, add:
-
-[source,yaml]
-----
-      - name: Git global credentials
-        uses: cloudbees-io/configure-git-global-credentials@v1
-        with:
-          token: ${{ secrets.MY_SCM_TOKEN }}
-          repositories: https://github.beescloud.com/
-----
-
-=== Configure a token when a step is repeated multiple times in a job
-
-Use a token when a step is repeated multiple times in the same job, resulting in layered authentication. In the case of multiple steps matching the same authentication, the last one takes precedence.
-
-In your YAML file, add:
-
-[source,yaml]
-----
-      - name: Git global credentials for GitHub
-        uses: cloudbees-io/configure-git-global-credentials@v1
-        with:
-          token: ${{ secrets.MY_GITHUB_TOKEN }}
-          repositories: |
-            https://github.com/user/repo1
-            https://github.com/user/repo2
-      - name: Git global credentials for GHE
-        uses: cloudbees-io/configure-git-global-credentials@v1
-        with:
-          token: ${{ secrets.MY_GHE_TOKEN }}
-          repositories: https://github.beescloud.com/
-      - name: Git global credentials for GitLab
-        uses: cloudbees-io/configure-git-global-credentials@v1
-        with:
-          token: ${{ secrets.MY_GITLAB_TOKEN }}
-          repositories: https://github.com/org/
+          repositories: "ssh://github.com/user/repo"
+          ssh-key: ${{secrets.<ssh-secret-name-placeholder>}}
 ----
 
 == License
