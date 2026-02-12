@@ -7,9 +7,8 @@ inputs:
     description: >
       Repository clone URL. separated by commas or spaces or newlines
       For example, "https://github.com/user/repo" or "https://github.com/user/repo1, https://github.com/user/repo2" or "https://github.com/user/repo1 https://github.com/user/repo2"
-      when using with ssh-key input, provide SSH clone URLs "ssh://github.com/user/repo"
+      when using with ssh-key input, provide based urls like "ssh://github.com/user/repo"
     required: false
-    default: "${{ cloudbees.scm.repositoryUrl }}"
   cloudbees-api-token:
     description: >
       The CloudBees API Token to use for fetching SCM tokens unless `token` or `ssh-key` have been configured

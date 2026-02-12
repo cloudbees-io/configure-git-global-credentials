@@ -2,7 +2,7 @@ FROM alpine:3.20.6 AS certs
 
 RUN apk add -U --no-cache ca-certificates
 
-FROM golang:1.25.5-alpine3.22 AS build
+FROM golang:1.26.0-alpine3.22 AS build
 
 WORKDIR /work
 
@@ -16,7 +16,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -tags netgo -ldflags '-w -extldflags "-
 
 ## Add a secondary target that allows testing locally under similar conditions without modifying your local gitconfig
 
-FROM golang:1.25.5 AS testing
+FROM golang:1.26.0 AS testing
 
 COPY --from=build /build-out/* /usr/local/bin/
 
