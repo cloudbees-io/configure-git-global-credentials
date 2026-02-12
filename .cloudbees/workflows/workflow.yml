@@ -112,8 +112,6 @@ jobs:
       scm-token-org: read
     steps:
       - uses: ./.cloudbees/testing
-        with:
-          repositories: https://github.com/calculi-corp
       - uses: docker://golang:1.25.5
         run: |
           mkdir test
