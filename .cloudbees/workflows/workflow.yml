@@ -19,7 +19,7 @@ jobs:
         uses: https://github.com/cloudbees-io/checkout@v1
 
       - name: Self Test
-        uses: docker://golang:1.25.5
+        uses: docker://golang:1.26.0
         run: |
           make verify
 
@@ -112,7 +112,7 @@ jobs:
       scm-token-org: read
     steps:
       - uses: ./.cloudbees/testing
-      - uses: docker://golang:1.25.5
+      - uses: docker://golang:1.26.0
         run: |
           mkdir test
           cd test
