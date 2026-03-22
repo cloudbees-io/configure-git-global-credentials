@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 
 	"github.com/cloudbees-io/configure-git-global-credentials/internal/configuration"
@@ -24,6 +26,9 @@ var (
 		Long:  "Configures the global git credentials",
 		RunE:  doConfigure,
 	}
+
+	// Ensure warning is printed only once
+	warningOnce sync.Once
 )
 
 func init() {
@@ -72,6 +77,9 @@ func cliContext() context.Context {
 }
 
 func doConfigure(command *cobra.Command, args []string) error {
+	// Display v1 deprecation warning (only once)
+	warningOnce.Do(printV1DeprecationWarning)
+
 	ctx := cliContext()
 
 	var cfg configuration.Config
@@ -80,4 +88,28 @@ func doConfigure(command *cobra.Command, args []string) error {
 	}
 
 	return cfg.Apply(ctx)
+}
+
+func printV1DeprecationWarning() {
+	warningMessage := `
+==================================================================================================
+                       				 ⚠️ DEPRECATION WARNING ⚠️
+==================================================================================================
+
+You are using the DEPRECATED v1 version of the configure-git-global-credentials action.
+
+Version v1 is no longer maintained and will be removed in the future.
+
+⚡ Please migrate to v2 as soon as possible.
+
+📖 Migration Guide:
+https://docs.cloudbees.com/docs/cloudbees-platform/latest/source-code-management/migrate-v1-to-v2
+
+Update your workflow file:
+  Change: uses: cloudbees-io/configure-git-global-credentials@v1
+  To:     uses: cloudbees-io/configure-git-global-credentials@v2
+
+==================================================================================================
+`
+	fmt.Fprint(os.Stderr, warningMessage)
 }
