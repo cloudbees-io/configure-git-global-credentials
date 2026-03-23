@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 	"strings"
-	"sync"
 	"syscall"
 
 	"github.com/cloudbees-io/configure-git-global-credentials/internal/configuration"
@@ -26,8 +25,6 @@ var (
 		Long:  "Configures the global git credentials",
 		RunE:  doConfigure,
 	}
-	// Ensure warning is printed only once
-	warningOnce sync.Once
 )
 
 func init() {
@@ -81,8 +78,8 @@ func cliContext() context.Context {
 }
 
 func doConfigure(command *cobra.Command, args []string) error {
-	// Display v1 deprecation warning (only once)
-	warningOnce.Do(printV1DeprecationWarning)
+	// Display v1 deprecation warning
+	printV1DeprecationWarning()
 
 	ctx := cliContext()
 
