@@ -5,14 +5,14 @@ name: SelfTest
 on:
   push:
     branches:
-      - "*"
+      - "**"
   workflow_dispatch:
 
 jobs:
   build:
-    if: cloudbees.api.url == 'https://api.saas-preprod.beescloud.com' || cloudbees.api.url == 'https://api.cloudbees.io'
     permissions:
       scm-token-own: read
+      scm-token-org: read
       id-token: write
     steps:
       - name: Checkout
@@ -37,7 +37,6 @@ jobs:
           oidc-iam-role: ${{ vars.oidc_staging_iam_role }}
 
   test-ssh-key:
-    if: cloudbees.api.url == 'https://api.saas-preprod.beescloud.com'
     needs:
       - build
     steps:
@@ -57,7 +56,6 @@ jobs:
           git clone https://github.com/cloudbees-io/checkout.git
 
   test-job-token-own-gh-org:
-    if: cloudbees.api.url == 'https://api.saas-preprod.beescloud.com'
     needs:
       - build
     permissions:
@@ -74,7 +72,6 @@ jobs:
           git clone https://github.com/calculi-corp/core-data-cache
 
   test-job-token-own-cb-org:
-    if: cloudbees.api.url == 'https://api.saas-preprod.beescloud.com'
     needs:
       - build
     permissions:
@@ -91,7 +88,6 @@ jobs:
           git clone https://github.com/calculi-corp/scm-service.git
 
   test-job-token-go-get:
-    if: cloudbees.api.url == 'https://api.saas-preprod.beescloud.com'
     needs:
       - build
     permissions:
