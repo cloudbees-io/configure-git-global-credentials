@@ -47,7 +47,7 @@ runs:
   using: composite
   steps:
     - name: Configure Git Global Credentials
-      uses: docker://020229604682.dkr.ecr.us-east-1.amazonaws.com/actions/configure-git-global-credentials:${{ file.scm.sha }}
+      uses: docker://020229604682.dkr.ecr.us-east-1.amazonaws.com/actions/configure-git-global-credentials:${{ action.scm.sha }}
       env:
         CLOUDBEES_EVENT_PATH: /cloudbees/event.json
         INPUT_REPOSITORIES: "${{ inputs.repositories }}"
